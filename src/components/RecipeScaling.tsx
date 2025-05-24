@@ -27,10 +27,6 @@ export default function RecipeScaling({ recipe, materials, onScaledRecipe, class
   const currentSize = recipe.batchSize || getTotalRecipeWeight(recipe);
   const scalingOptions = getScalingOptions(recipe);
 
-  // Debug logging
-  console.log('Current size:', currentSize);
-  console.log('Scaling options:', scalingOptions);
-
   const handleQuickScale = (newSize: number) => {
     const scaledRecipe = scaleRecipe(recipe, newSize, materials);
     onScaledRecipe(scaledRecipe);
@@ -78,9 +74,9 @@ export default function RecipeScaling({ recipe, materials, onScaledRecipe, class
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.3, type: "spring", stiffness: 300 }}
-            className="absolute top-full mt-4 left-0 right-0 z-20"
+            className="fixed inset-x-4 top-16 bottom-4 z-[9999] max-w-5xl mx-auto overflow-auto"
           >
-            <Card className="bg-white/95 backdrop-blur-sm border-pink-200/50 shadow-xl">
+            <Card className="bg-white/95 backdrop-blur-sm border-pink-200/50 shadow-2xl">
               <CardHeader className="bg-gradient-to-r from-pink-500/10 to-yellow-500/10 border-b border-pink-200/30">
                 <CardTitle className="flex items-center gap-3">
                   <motion.div
@@ -98,6 +94,14 @@ export default function RecipeScaling({ recipe, materials, onScaledRecipe, class
                       Current size: {formatWeight(currentSize, 'g')} • Cost: {formatCurrency(recipe.totalCost)}
                     </p>
                   </div>
+                  <motion.button
+                    onClick={() => setIsOpen(false)}
+                    className="ml-auto p-2 rounded-full hover:bg-pink-100 transition-colors"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <span className="text-xl text-pink-600">×</span>
+                  </motion.button>
                 </CardTitle>
               </CardHeader>
 
@@ -245,7 +249,7 @@ export default function RecipeScaling({ recipe, materials, onScaledRecipe, class
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-10"
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[9998]"
             onClick={() => setIsOpen(false)}
           />
         )}
