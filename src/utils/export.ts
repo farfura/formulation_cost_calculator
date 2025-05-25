@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import * as XLSX from 'xlsx-js-style';
 import { Recipe, ExportData, RawMaterial } from '@/types';
 import { formatWeight, formatCurrency } from './conversions';
 
@@ -18,7 +18,136 @@ export function prepareExportData(recipe: Recipe): ExportData[] {
 }
 
 /**
- * Create a comprehensive Excel export for a single recipe
+ * Define consistent styles for the Excel workbook with beautiful pastel colors
+ */
+const styles = {
+  // Main header style - large, elegant font, white text on soft pink background
+  mainHeader: {
+    font: { bold: true, sz: 18, color: { rgb: "FFFFFF" }, name: "Georgia" },
+    fill: { fgColor: { rgb: "D87AA7" } }, // Soft dusty pink
+    alignment: { horizontal: "center", vertical: "center" },
+    border: {
+      top: { style: "thick", color: { rgb: "C76B98" } },
+      bottom: { style: "thick", color: { rgb: "C76B98" } },
+      left: { style: "thick", color: { rgb: "C76B98" } },
+      right: { style: "thick", color: { rgb: "C76B98" } }
+    }
+  },
+  
+  // Section header style - medium size, elegant font, white text on lavender background
+  sectionHeader: {
+    font: { bold: true, sz: 15, color: { rgb: "FFFFFF" }, name: "Georgia" },
+    fill: { fgColor: { rgb: "B8A9C9" } }, // Soft lavender
+    alignment: { horizontal: "center", vertical: "center" },
+    border: {
+      top: { style: "medium", color: { rgb: "A594B8" } },
+      bottom: { style: "medium", color: { rgb: "A594B8" } },
+      left: { style: "medium", color: { rgb: "A594B8" } },
+      right: { style: "medium", color: { rgb: "A594B8" } }
+    }
+  },
+  
+  // Column header style - elegant font, white text on soft coral background
+  columnHeader: {
+    font: { bold: true, sz: 13, color: { rgb: "FFFFFF" }, name: "Georgia" },
+    fill: { fgColor: { rgb: "F4A6CD" } }, // Soft coral pink
+    alignment: { horizontal: "center", vertical: "center" },
+    border: {
+      top: { style: "medium", color: { rgb: "F092BB" } },
+      bottom: { style: "medium", color: { rgb: "F092BB" } },
+      left: { style: "medium", color: { rgb: "F092BB" } },
+      right: { style: "medium", color: { rgb: "F092BB" } }
+    }
+  },
+  
+  // Data cell style - elegant font with subtle borders
+  dataCell: {
+    font: { sz: 14, name: "Calibri" },
+    alignment: { horizontal: "left", vertical: "center" },
+    border: {
+      top: { style: "thin", color: { rgb: "E8D5E8" } },
+      bottom: { style: "thin", color: { rgb: "E8D5E8" } },
+      left: { style: "thin", color: { rgb: "E8D5E8" } },
+      right: { style: "thin", color: { rgb: "E8D5E8" } }
+    }
+  },
+  
+  // Number cell style - right aligned for numbers with elegant styling
+  numberCell: {
+    font: { sz: 14, name: "Calibri" },
+    alignment: { horizontal: "right", vertical: "center" },
+    border: {
+      top: { style: "thin", color: { rgb: "E8D5E8" } },
+      bottom: { style: "thin", color: { rgb: "E8D5E8" } },
+      left: { style: "thin", color: { rgb: "E8D5E8" } },
+      right: { style: "thin", color: { rgb: "E8D5E8" } }
+    }
+  },
+  
+  // Total row style - bold with soft peach background
+  totalRow: {
+    font: { bold: true, sz: 15, name: "Georgia", color: { rgb: "8B4B6B" } },
+    fill: { fgColor: { rgb: "FFE5CC" } }, // Soft peach
+    alignment: { horizontal: "center", vertical: "center" },
+    border: {
+      top: { style: "medium", color: { rgb: "FFD4B3" } },
+      bottom: { style: "medium", color: { rgb: "FFD4B3" } },
+      left: { style: "medium", color: { rgb: "FFD4B3" } },
+      right: { style: "medium", color: { rgb: "FFD4B3" } }
+    }
+  },
+  
+  // Info cell style - soft mint background for informational cells
+  infoCell: {
+    font: { sz: 14, name: "Calibri", italic: true, color: { rgb: "5D4E75" } },
+    fill: { fgColor: { rgb: "F0F8F0" } }, // Very soft mint
+    alignment: { horizontal: "left", vertical: "center" },
+    border: {
+      top: { style: "thin", color: { rgb: "E8D5E8" } },
+      bottom: { style: "thin", color: { rgb: "E8D5E8" } },
+      left: { style: "thin", color: { rgb: "E8D5E8" } },
+      right: { style: "thin", color: { rgb: "E8D5E8" } }
+    }
+  },
+
+  // Enhanced data cell with alternating row background
+  dataRowAlternate: {
+    font: { sz: 14, name: "Calibri" },
+    fill: { fgColor: { rgb: "FDF8FD" } }, // Very light pink
+    alignment: { horizontal: "left", vertical: "center" },
+    border: {
+      top: { style: "thin", color: { rgb: "E8D5E8" } },
+      bottom: { style: "thin", color: { rgb: "E8D5E8" } },
+      left: { style: "thin", color: { rgb: "E8D5E8" } },
+      right: { style: "thin", color: { rgb: "E8D5E8" } }
+    }
+  },
+
+  // Enhanced number cell with alternating row background
+  numberRowAlternate: {
+    font: { sz: 14, name: "Calibri" },
+    fill: { fgColor: { rgb: "FDF8FD" } }, // Very light pink
+    alignment: { horizontal: "right", vertical: "center" },
+    border: {
+      top: { style: "thin", color: { rgb: "E8D5E8" } },
+      bottom: { style: "thin", color: { rgb: "E8D5E8" } },
+      left: { style: "thin", color: { rgb: "E8D5E8" } },
+      right: { style: "thin", color: { rgb: "E8D5E8" } }
+    }
+  }
+};
+
+/**
+ * Apply style to a specific cell
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function applyCellStyle(ws: any, cellRef: string, style: any) {
+  if (!ws[cellRef]) ws[cellRef] = { t: 's', v: '' };
+  ws[cellRef].s = style;
+}
+
+/**
+ * Create a comprehensive Excel export for a single recipe with beautiful formatting
  */
 export function exportToExcel(recipe: Recipe): void {
   const wb = XLSX.utils.book_new();
@@ -44,18 +173,21 @@ export function exportToExcel(recipe: Recipe): void {
     return sum + (ingredient.amountInGrams || 0);
   }, 0);
   
-  // Recipe Overview Sheet
+  // Recipe Overview Sheet with beautiful formatting
   const overviewData = [
-    ['🧪 RECIPE OVERVIEW', '', '', ''],
-    ['Recipe Name:', recipe.name, '', ''],
-    ['Created Date:', new Date().toLocaleDateString(), '', ''],
-    ['Total Batch Size:', `${totalWeight}g`, '', ''],
-    ['Total Recipe Cost:', formatCurrency(recipe.totalCost), '', ''],
-    ['Cost per Gram:', formatCurrency(recipe.costPerUnit || 0), '', ''],
-    ['Cost per 100g:', formatCurrency((recipe.costPerUnit || 0) * 100), '', ''],
-    ['', '', '', ''],
-    ['💡 COST BREAKDOWN BY INGREDIENT', '', '', ''],
-    ['Ingredient Name', 'Amount Used', 'Percentage', 'Cost', 'Cost per Gram'],
+    ['🧪 RECIPE OVERVIEW', '', '', '', ''],
+    [''], // Empty row for spacing
+    ['Recipe Information', '', '', '', ''],
+    ['Recipe Name:', recipe.name, '', '', ''],
+    ['Created Date:', new Date().toLocaleDateString(), '', '', ''],
+    ['Total Batch Size:', `${totalWeight.toFixed(2)}g`, '', '', ''],
+    ['Total Recipe Cost:', formatCurrency(recipe.totalCost), '', '', ''],
+    ['Cost per Gram:', formatCurrency(recipe.costPerUnit || 0), '', '', ''],
+    ['Cost per 100g:', formatCurrency((recipe.costPerUnit || 0) * 100), '', '', ''],
+    [''], // Empty row for spacing
+    ['💡 INGREDIENT BREAKDOWN', '', '', '', ''],
+    [''], // Empty row for spacing
+    ['Ingredient Name', 'Amount Used', 'Weight (g)', 'Percentage', 'Total Cost']
   ];
 
   // Add ingredient breakdown
@@ -65,17 +197,18 @@ export function exportToExcel(recipe: Recipe): void {
       overviewData.push([
         ingredient.materialName,
         `${ingredient.amount}${ingredient.unit}`,
+        `${ingredient.amountInGrams.toFixed(2)}g`,
         `${percentage}%`,
-        formatCurrency(ingredient.cost || 0),
-        formatCurrency(ingredient.amountInGrams > 0 ? (ingredient.cost || 0) / ingredient.amountInGrams : 0)
+        formatCurrency(ingredient.cost || 0)
       ]);
     }
   });
 
   // Add scaling guide
-  overviewData.push(['', '', '', '', '']);
+  overviewData.push(['']); // Empty row for spacing
   overviewData.push(['📊 SCALING GUIDE', '', '', '', '']);
-  overviewData.push(['Batch Size', 'Total Cost', 'Cost per Unit', '', '']);
+  overviewData.push(['']); // Empty row for spacing
+  overviewData.push(['Batch Size', 'Total Cost', 'Cost per Gram', '', '']);
   
   const scalingSizes = [50, 100, 250, 500, 1000];
   scalingSizes.forEach(size => {
@@ -94,33 +227,94 @@ export function exportToExcel(recipe: Recipe): void {
   
   // Set column widths for overview
   ws1['!cols'] = [
-    { wch: 25 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 15 }
+    { wch: 35 }, { wch: 25 }, { wch: 20 }, { wch: 20 }, { wch: 25 }
   ];
 
-  // Style the headers
-  const headerCells = ['A1', 'A9'];
-  const scalingHeaderRow = overviewData.findIndex(row => row[0] === '📊 SCALING GUIDE') + 1;
-  headerCells.push(`A${scalingHeaderRow}`);
+  // Set row heights for better appearance
+  ws1['!rows'] = [
+    { hpt: 35 }, // Main header row - taller for elegance
+    { hpt: 22 }, // Empty row
+    { hpt: 28 }, // Section header
+    ...Array(6).fill({ hpt: 25 }), // Info rows - slightly taller
+    { hpt: 22 }, // Empty row
+    { hpt: 28 }, // Section header
+    { hpt: 22 }, // Empty row
+    { hpt: 26 }, // Column headers - taller for better visibility
+    ...Array(recipe.ingredients.length).fill({ hpt: 24 }), // Ingredient rows - more spacious
+    { hpt: 22 }, // Empty row
+    { hpt: 28 }, // Section header
+    { hpt: 22 }, // Empty row
+    { hpt: 26 }, // Scaling headers
+    ...Array(scalingSizes.length).fill({ hpt: 24 }) // Scaling rows
+  ];
+
+  // Apply beautiful styling
+  // Main header
+  applyCellStyle(ws1, 'A1', styles.mainHeader);
+  ws1['A1'].s = { ...styles.mainHeader, alignment: { horizontal: "left", vertical: "center" } };
   
-  headerCells.forEach(cell => {
-    if (!ws1[cell]) ws1[cell] = {};
-    ws1[cell].s = {
-      font: { bold: true, color: { rgb: "FFFFFF" } },
-      fill: { fgColor: { rgb: "E91E63" } }
-    };
-  });
+  // Section headers
+  applyCellStyle(ws1, 'A3', styles.sectionHeader);
+  applyCellStyle(ws1, 'A11', styles.sectionHeader);
+  const scalingHeaderRow = 15 + recipe.ingredients.length;
+  applyCellStyle(ws1, `A${scalingHeaderRow}`, styles.sectionHeader);
+  
+  // Column headers for ingredient breakdown
+  const ingredientHeaderRow = 13;
+  for (let col = 0; col < 5; col++) {
+    const cellRef = XLSX.utils.encode_cell({ r: ingredientHeaderRow - 1, c: col });
+    applyCellStyle(ws1, cellRef, styles.columnHeader);
+  }
+  
+  // Column headers for scaling guide
+  const scalingTableHeaderRow = scalingHeaderRow + 2;
+  for (let col = 0; col < 3; col++) {
+    const cellRef = XLSX.utils.encode_cell({ r: scalingTableHeaderRow - 1, c: col });
+    applyCellStyle(ws1, cellRef, styles.columnHeader);
+  }
+  
+  // Apply data cell styles to ingredient rows with alternating colors
+  for (let i = 0; i < recipe.ingredients.length; i++) {
+    const row = ingredientHeaderRow + i;
+    const isAlternateRow = i % 2 === 1; // Every other row gets alternate styling
+    for (let col = 0; col < 5; col++) {
+      const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+      if (col === 0) {
+        applyCellStyle(ws1, cellRef, isAlternateRow ? styles.dataRowAlternate : styles.dataCell);
+      } else {
+        applyCellStyle(ws1, cellRef, isAlternateRow ? styles.numberRowAlternate : styles.numberCell);
+      }
+    }
+  }
+  
+  // Apply data cell styles to scaling rows with alternating colors
+  for (let i = 0; i < scalingSizes.length; i++) {
+    const row = scalingTableHeaderRow + i;
+    const isAlternateRow = i % 2 === 1;
+    for (let col = 0; col < 3; col++) {
+      const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+      applyCellStyle(ws1, cellRef, isAlternateRow ? styles.numberRowAlternate : styles.numberCell);
+    }
+  }
+  
+  // Apply info cell styles to recipe information
+  for (let row = 4; row <= 9; row++) {
+    applyCellStyle(ws1, `A${row}`, styles.infoCell);
+    applyCellStyle(ws1, `B${row}`, styles.dataCell);
+  }
 
   XLSX.utils.book_append_sheet(wb, ws1, 'Recipe Overview');
 
-  // Recipe Ingredients Sheet (NEW - for easier ingredient reference)
+  // Recipe Ingredients Sheet with beautiful formatting
   const ingredientsData = [
     ['🧪 RECIPE INGREDIENTS & WEIGHTS', '', '', '', ''],
+    [''], // Empty row
+    ['Recipe Information', '', '', '', ''],
     ['Recipe:', recipe.name, '', '', ''],
-    ['Total Batch Weight:', `${totalWeight}g`, '', '', ''],
+    ['Total Batch Weight:', `${totalWeight.toFixed(2)}g`, '', '', ''],
     ['Number of Ingredients:', recipe.ingredients.length.toString(), '', '', ''],
-    ['', '', '', '', ''],
-    ['INGREDIENT', 'AMOUNT', 'UNIT', 'GRAMS', 'PERCENTAGE'],
-    ['', '', '', '', '']
+    [''], // Empty row
+    ['INGREDIENT', 'AMOUNT', 'UNIT', 'WEIGHT (G)', 'PERCENTAGE']
   ];
 
   // Add each ingredient with clear formatting
@@ -131,20 +325,21 @@ export function exportToExcel(recipe: Recipe): void {
         `${index + 1}. ${ingredient.materialName}`,
         (ingredient.amount || 0).toString(),
         ingredient.unit || 'g',
-        `${(ingredient.amountInGrams || 0).toFixed(2)}g`,
+        `${(ingredient.amountInGrams || 0).toFixed(2)}`,
         `${percentage}%`
       ]);
     }
   });
 
   // Add summary
-  ingredientsData.push(['', '', '', '', '']);
-  ingredientsData.push(['TOTAL INGREDIENTS:', recipe.ingredients.length.toString(), '', `${totalWeight.toFixed(2)}g`, '100%']);
+  ingredientsData.push(['']); // Empty row
+  ingredientsData.push(['TOTALS:', recipe.ingredients.length.toString(), '', `${totalWeight.toFixed(2)}`, '100%']);
   
   // Add scaling reference
-  ingredientsData.push(['', '', '', '', '']);
-  ingredientsData.push(['🔄 SCALING REFERENCE:', '', '', '', '']);
-  ingredientsData.push(['To make 100g batch:', '', '', '', '']);
+  ingredientsData.push(['']); // Empty row
+  ingredientsData.push(['🔄 SCALING REFERENCE (100g batch)', '', '', '', '']);
+  ingredientsData.push(['']); // Empty row
+  ingredientsData.push(['INGREDIENT', '', '', 'WEIGHT (G)', '']);
   
   recipe.ingredients.forEach((ingredient, index) => {
     if (ingredient && ingredient.materialName) {
@@ -153,7 +348,7 @@ export function exportToExcel(recipe: Recipe): void {
         `${index + 1}. ${ingredient.materialName}`,
         '',
         '',
-        `${scaledAmount.toFixed(2)}g`,
+        `${scaledAmount.toFixed(2)}`,
         ''
       ]);
     }
@@ -163,29 +358,90 @@ export function exportToExcel(recipe: Recipe): void {
   
   // Set column widths for ingredients sheet
   wsIngredients['!cols'] = [
-    { wch: 30 }, { wch: 12 }, { wch: 8 }, { wch: 15 }, { wch: 12 }
+    { wch: 45 }, { wch: 18 }, { wch: 12 }, { wch: 20 }, { wch: 20 }
   ];
 
-  // Style the ingredient headers
-  const ingredientHeaderCells = ['A1', 'A6'];
-  const scalingRefRow = ingredientsData.findIndex(row => row[0] === '🔄 SCALING REFERENCE:') + 1;
-  ingredientHeaderCells.push(`A${scalingRefRow}`);
+  // Set row heights
+  wsIngredients['!rows'] = [
+    { hpt: 35 }, // Main header - elegant height
+    { hpt: 22 }, // Empty row
+    { hpt: 28 }, // Section header
+    ...Array(3).fill({ hpt: 25 }), // Info rows
+    { hpt: 22 }, // Empty row
+    { hpt: 26 }, // Column headers
+    ...Array(recipe.ingredients.length).fill({ hpt: 24 }), // Ingredient rows
+    { hpt: 22 }, // Empty row
+    { hpt: 26 }, // Total row
+    { hpt: 22 }, // Empty row
+    { hpt: 28 }, // Scaling header
+    { hpt: 22 }, // Empty row
+    { hpt: 26 }, // Scaling column headers
+    ...Array(recipe.ingredients.length).fill({ hpt: 24 }) // Scaling rows
+  ];
+
+  // Apply styling to ingredients sheet
+  applyCellStyle(wsIngredients, 'A1', styles.mainHeader);
+  applyCellStyle(wsIngredients, 'A3', styles.sectionHeader);
   
-  ingredientHeaderCells.forEach(cell => {
-    if (!wsIngredients[cell]) wsIngredients[cell] = {};
-    wsIngredients[cell].s = {
-      font: { bold: true, color: { rgb: "FFFFFF" } },
-      fill: { fgColor: { rgb: "2563EB" } }
-    };
-  });
+  // Column headers for main ingredient table
+  for (let col = 0; col < 5; col++) {
+    const cellRef = XLSX.utils.encode_cell({ r: 7, c: col });
+    applyCellStyle(wsIngredients, cellRef, styles.columnHeader);
+  }
+  
+  // Data rows for ingredients with alternating colors
+  for (let i = 0; i < recipe.ingredients.length; i++) {
+    const row = 8 + i;
+    const isAlternateRow = i % 2 === 1;
+    for (let col = 0; col < 5; col++) {
+      const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+      if (col === 0) {
+        applyCellStyle(wsIngredients, cellRef, isAlternateRow ? styles.dataRowAlternate : styles.dataCell);
+      } else {
+        applyCellStyle(wsIngredients, cellRef, isAlternateRow ? styles.numberRowAlternate : styles.numberCell);
+      }
+    }
+  }
+  
+  // Total row styling
+  const totalRowIngredients = 9 + recipe.ingredients.length;
+  for (let col = 0; col < 5; col++) {
+    const cellRef = XLSX.utils.encode_cell({ r: totalRowIngredients, c: col });
+    applyCellStyle(wsIngredients, cellRef, styles.totalRow);
+  }
+  
+  // Scaling section
+  const scalingHeaderIndex = totalRowIngredients + 2;
+  applyCellStyle(wsIngredients, `A${scalingHeaderIndex + 1}`, styles.sectionHeader);
+  
+  // Scaling column headers
+  const scalingColHeaderIndex = scalingHeaderIndex + 2;
+  for (let col = 0; col < 5; col++) {
+    const cellRef = XLSX.utils.encode_cell({ r: scalingColHeaderIndex, c: col });
+    applyCellStyle(wsIngredients, cellRef, styles.columnHeader);
+  }
+
+  // Scaling data rows with alternating colors
+  for (let i = 0; i < recipe.ingredients.length; i++) {
+    const row = scalingColHeaderIndex + 1 + i;
+    const isAlternateRow = i % 2 === 1;
+    for (let col = 0; col < 5; col++) {
+      const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+      if (col === 0) {
+        applyCellStyle(wsIngredients, cellRef, isAlternateRow ? styles.dataRowAlternate : styles.dataCell);
+      } else {
+        applyCellStyle(wsIngredients, cellRef, isAlternateRow ? styles.numberRowAlternate : styles.numberCell);
+      }
+    }
+  }
 
   XLSX.utils.book_append_sheet(wb, wsIngredients, 'Recipe Ingredients');
 
-  // Detailed Ingredient Sheet
+  // Detailed Ingredient Sheet with beautiful formatting
   const detailData = [
-    ['🔬 DETAILED INGREDIENT ANALYSIS', '', '', '', '', ''],
-    ['', '', '', '', '', ''],
-    ['Ingredient', 'Amount', 'Unit', 'Grams', 'Cost/Gram', 'Total Cost', 'Percentage'],
+    ['🔬 DETAILED INGREDIENT ANALYSIS', '', '', '', '', '', ''],
+    [''], // Empty row
+    ['Ingredient', 'Amount', 'Unit', 'Weight (g)', 'Cost/Gram', 'Total Cost', 'Percentage']
   ];
 
   recipe.ingredients.forEach(ingredient => {
@@ -205,53 +461,122 @@ export function exportToExcel(recipe: Recipe): void {
   });
 
   // Add totals
-  detailData.push(['', '', '', '', '', '', '']);
+  detailData.push(['']); // Empty row
   detailData.push(['TOTALS:', '', '', totalWeight.toFixed(2), '', formatCurrency(recipe.totalCost), '100%']);
 
   const ws2 = XLSX.utils.aoa_to_sheet(detailData);
   ws2['!cols'] = [
-    { wch: 25 }, { wch: 10 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }
+    { wch: 35 }, { wch: 15 }, { wch: 12 }, { wch: 18 }, { wch: 20 }, { wch: 20 }, { wch: 18 }
   ];
+
+  // Set row heights for elegant appearance
+  ws2['!rows'] = [
+    { hpt: 35 }, // Main header
+    { hpt: 22 }, // Empty row
+    { hpt: 26 }, // Column headers
+    ...Array(recipe.ingredients.length).fill({ hpt: 24 }), // Data rows
+    { hpt: 22 }, // Empty row
+    { hpt: 26 } // Total row
+  ];
+
+  // Apply styling to detail sheet
+  applyCellStyle(ws2, 'A1', styles.mainHeader);
+  
+  // Column headers
+  for (let col = 0; col < 7; col++) {
+    const cellRef = XLSX.utils.encode_cell({ r: 2, c: col });
+    applyCellStyle(ws2, cellRef, styles.columnHeader);
+  }
+  
+  // Data rows with alternating colors
+  for (let i = 0; i < recipe.ingredients.length; i++) {
+    const row = 3 + i;
+    const isAlternateRow = i % 2 === 1;
+    for (let col = 0; col < 7; col++) {
+      const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+      if (col === 0) {
+        applyCellStyle(ws2, cellRef, isAlternateRow ? styles.dataRowAlternate : styles.dataCell);
+      } else {
+        applyCellStyle(ws2, cellRef, isAlternateRow ? styles.numberRowAlternate : styles.numberCell);
+      }
+    }
+  }
+  
+  // Total row
+  const totalRowDetails = 4 + recipe.ingredients.length;
+  for (let col = 0; col < 7; col++) {
+    const cellRef = XLSX.utils.encode_cell({ r: totalRowDetails, c: col });
+    applyCellStyle(ws2, cellRef, styles.totalRow);
+  }
 
   XLSX.utils.book_append_sheet(wb, ws2, 'Ingredient Details');
 
-  // Instructions Sheet
+  // Instructions Sheet with beautiful formatting
   const instructionsData = [
     ['📋 HOW TO USE THIS SPREADSHEET', '', ''],
-    ['', '', ''],
+    [''], // Empty row
+    ['Sheet Guide', '', ''],
     ['Recipe Overview Tab:', 'Main summary of your recipe with costs', ''],
-    ['• Recipe name and basic info', '', ''],
-    ['• Total costs and cost per gram', '', ''],
+    ['• Recipe name and basic information', '', ''],
+    ['• Total costs and cost per gram calculations', '', ''],
     ['• Ingredient breakdown with percentages', '', ''],
     ['• Scaling guide for different batch sizes', '', ''],
-    ['', '', ''],
+    [''], // Empty row
     ['Recipe Ingredients Tab:', 'Clear ingredient list for easy reference', ''],
     ['• Numbered ingredient list with weights', '', ''],
     ['• Original amounts and converted grams', '', ''],
-    ['• Percentage breakdown', '', ''],
-    ['• 100g scaling reference', '', ''],
-    ['', '', ''],
-    ['Ingredient Details Tab:', 'Detailed cost analysis', ''],
-    ['• Exact amounts and units', '', ''],
-    ['• Conversion to grams', '', ''],
-    ['• Individual costs and percentages', '', ''],
-    ['', '', ''],
+    ['• Percentage breakdown of each ingredient', '', ''],
+    ['• 100g scaling reference for easy calculations', '', ''],
+    [''], // Empty row
+    ['Ingredient Details Tab:', 'Detailed cost analysis per ingredient', ''],
+    ['• Exact amounts and units used', '', ''],
+    ['• Conversion to grams for accuracy', '', ''],
+    ['• Individual costs and cost percentages', '', ''],
+    [''], // Empty row
     ['💡 Tips for Using Your Recipe:', '', ''],
-    ['• Use the Recipe Ingredients tab for quick reference', '', ''],
     ['• Always measure ingredients by weight (grams) for accuracy', '', ''],
     ['• Use the scaling guide to make different batch sizes', '', ''],
     ['• Cost per gram helps you price your final products', '', ''],
     ['• Keep this sheet for your records and inventory tracking', '', ''],
-    ['', '', ''],
-    ['📞 Need Help?', '', ''],
+    ['• Refer to Recipe Ingredients tab for quick formulation reference', '', ''],
+    [''], // Empty row
+    ['📞 Support Information', '', ''],
     ['This file was generated by Beauty Formula Calculator', '', ''],
-    ['For questions about formulation, consult a cosmetic chemist', '', '']
+    ['For formulation questions, consult a qualified cosmetic chemist', '', ''],
+    ['Always follow proper safety guidelines when formulating', '', '']
   ];
 
-  const ws3 = XLSX.utils.aoa_to_sheet(instructionsData);
-  ws3['!cols'] = [{ wch: 30 }, { wch: 40 }, { wch: 15 }];
+  const instructionsWs = XLSX.utils.aoa_to_sheet(instructionsData);
+  instructionsWs['!cols'] = [{ wch: 45 }, { wch: 60 }, { wch: 20 }];
 
-  XLSX.utils.book_append_sheet(wb, ws3, 'Instructions');
+  // Set row heights for elegant appearance
+  instructionsWs['!rows'] = [
+    { hpt: 35 }, // Main header
+    { hpt: 22 }, // Empty row
+    { hpt: 28 }, // Section header
+    ...Array(instructionsData.length - 3).fill({ hpt: 25 }) // All other rows with comfortable spacing
+  ];
+
+  // Apply styling to instructions sheet
+  applyCellStyle(instructionsWs, 'A1', styles.mainHeader);
+  applyCellStyle(instructionsWs, 'A3', styles.sectionHeader);
+  applyCellStyle(instructionsWs, 'A10', styles.sectionHeader);
+  applyCellStyle(instructionsWs, 'A16', styles.sectionHeader);
+  applyCellStyle(instructionsWs, 'A21', styles.sectionHeader);
+  applyCellStyle(instructionsWs, 'A28', styles.sectionHeader);
+  
+  // Apply info cell styles to bullet points and instructions
+  for (let row = 4; row < instructionsData.length; row++) {
+    if (instructionsData[row][0] && instructionsData[row][0] !== '' && !instructionsData[row][0].includes(':')) {
+      applyCellStyle(instructionsWs, `A${row + 1}`, styles.infoCell);
+      applyCellStyle(instructionsWs, `B${row + 1}`, styles.infoCell);
+    } else if (instructionsData[row][0] && instructionsData[row][0].includes(':')) {
+      applyCellStyle(instructionsWs, `A${row + 1}`, styles.dataCell);
+      applyCellStyle(instructionsWs, `B${row + 1}`, styles.dataCell);
+    }
+  }
+
+  XLSX.utils.book_append_sheet(wb, instructionsWs, 'Instructions');
 
   // Export with better filename
   const timestamp = new Date().toISOString().split('T')[0];
@@ -340,25 +665,27 @@ export function exportToCSV(recipe: Recipe): void {
 }
 
 /**
- * Export multiple recipes to comprehensive Excel workbook
+ * Export multiple recipes to comprehensive Excel workbook with beautiful formatting
  */
 export function exportMultipleRecipesToExcel(recipes: Recipe[]): void {
   const wb = XLSX.utils.book_new();
   
-  // Summary Sheet
+  // Summary Sheet with beautiful formatting
   const summaryData = [
     ['📊 RECIPE COLLECTION SUMMARY', '', '', '', '', ''],
+    [''], // Empty row
+    ['Collection Information', '', '', '', '', ''],
     ['Generated on:', new Date().toLocaleString(), '', '', '', ''],
     ['Total Recipes:', recipes.length.toString(), '', '', '', ''],
-    ['', '', '', '', '', ''],
-    ['Recipe Name', 'Batch Size', 'Total Cost', 'Cost/Gram', 'Ingredients', 'Date Created'],
+    [''], // Empty row
+    ['Recipe Name', 'Batch Size', 'Total Cost', 'Cost/Gram', 'Ingredients', 'Date Created']
   ];
 
   recipes.forEach(recipe => {
     const totalWeight = recipe.ingredients.reduce((sum, ingredient) => sum + ingredient.amountInGrams, 0);
     summaryData.push([
       recipe.name,
-      `${totalWeight}g`,
+      `${totalWeight.toFixed(2)}g`,
       formatCurrency(recipe.totalCost),
       formatCurrency(recipe.costPerUnit || 0),
       recipe.ingredients.length.toString(),
@@ -367,8 +694,9 @@ export function exportMultipleRecipesToExcel(recipes: Recipe[]): void {
   });
 
   // Add cost analysis
-  summaryData.push(['', '', '', '', '', '']);
+  summaryData.push(['']); // Empty row
   summaryData.push(['💰 COST ANALYSIS', '', '', '', '', '']);
+  summaryData.push(['']); // Empty row
   
   const validCostPerUnit = recipes.filter(r => r.costPerUnit !== undefined).map(r => r.costPerUnit!);
   if (validCostPerUnit.length > 0) {
@@ -383,70 +711,162 @@ export function exportMultipleRecipesToExcel(recipes: Recipe[]): void {
 
   const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
   summaryWs['!cols'] = [
-    { wch: 25 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 15 }
+    { wch: 40 }, { wch: 20 }, { wch: 20 }, { wch: 20 }, { wch: 18 }, { wch: 20 }
   ];
+
+  // Set row heights for elegant appearance
+  summaryWs['!rows'] = [
+    { hpt: 35 }, // Main header
+    { hpt: 22 }, // Empty row
+    { hpt: 28 }, // Section header
+    ...Array(2).fill({ hpt: 25 }), // Info rows
+    { hpt: 22 }, // Empty row
+    { hpt: 26 }, // Column headers
+    ...Array(recipes.length).fill({ hpt: 24 }), // Recipe rows
+    { hpt: 22 }, // Empty row for cost analysis
+    { hpt: 28 }, // Cost analysis header
+    { hpt: 22 }, // Empty row
+    ...Array(3).fill({ hpt: 25 }) // Cost analysis rows
+  ];
+
+  // Apply beautiful styling to summary sheet
+  applyCellStyle(summaryWs, 'A1', styles.mainHeader);
+  applyCellStyle(summaryWs, 'A3', styles.sectionHeader);
+  
+  // Column headers
+  for (let col = 0; col < 6; col++) {
+    const cellRef = XLSX.utils.encode_cell({ r: 6, c: col });
+    applyCellStyle(summaryWs, cellRef, styles.columnHeader);
+  }
+  
+  // Data rows with alternating colors
+  for (let i = 0; i < recipes.length; i++) {
+    const row = 7 + i;
+    const isAlternateRow = i % 2 === 1;
+    for (let col = 0; col < 6; col++) {
+      const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+      if (col === 0) {
+        applyCellStyle(summaryWs, cellRef, isAlternateRow ? styles.dataRowAlternate : styles.dataCell);
+      } else {
+        applyCellStyle(summaryWs, cellRef, isAlternateRow ? styles.numberRowAlternate : styles.numberCell);
+      }
+    }
+  }
+  
+  // Cost analysis section
+  const analysisStartRow = 8 + recipes.length;
+  applyCellStyle(summaryWs, `A${analysisStartRow + 1}`, styles.sectionHeader);
 
   XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
 
-  // Individual recipe sheets
-  recipes.forEach((recipe) => {
-    const totalWeight = recipe.ingredients.reduce((sum, ingredient) => sum + ingredient.amountInGrams, 0);
-    const recipeData = [
-      [`🧪 ${recipe.name.toUpperCase()}`, '', '', '', ''],
-      ['', '', '', '', ''],
-      ['Recipe Info:', '', '', '', ''],
-      ['Total Weight:', `${totalWeight}g`, '', '', ''],
-      ['Total Cost:', formatCurrency(recipe.totalCost), '', '', ''],
-      ['Cost per Gram:', formatCurrency(recipe.costPerUnit || 0), '', '', ''],
-      ['', '', '', '', ''],
-      ['Ingredient', 'Amount', 'Unit', 'Cost', 'Percentage'],
-    ];
+  // Individual recipe sheets (simplified for space)
+  recipes.forEach((recipe, index) => {
+    if (index < 10) { // Limit to first 10 recipes to avoid too many sheets
+      const totalWeight = recipe.ingredients.reduce((sum, ingredient) => sum + ingredient.amountInGrams, 0);
+      const recipeData = [
+        [`🧪 ${recipe.name.toUpperCase()}`, '', '', '', ''],
+        [''], // Empty row
+        ['Recipe Information', '', '', '', ''],
+        ['Total Weight:', `${totalWeight.toFixed(2)}g`, '', '', ''],
+        ['Total Cost:', formatCurrency(recipe.totalCost), '', '', ''],
+        ['Cost per Gram:', formatCurrency(recipe.costPerUnit || 0), '', '', ''],
+        [''], // Empty row
+        ['Ingredient', 'Amount', 'Unit', 'Weight (g)', 'Cost']
+      ];
 
-    recipe.ingredients.forEach(ingredient => {
-      const percentage = totalWeight > 0 ? ((ingredient.amountInGrams / totalWeight) * 100).toFixed(2) : '0';
-      recipeData.push([
-        ingredient.materialName,
-        ingredient.amount.toString(),
-        ingredient.unit,
-        formatCurrency(ingredient.cost),
-        `${percentage}%`
-      ]);
-    });
+      recipe.ingredients.forEach(ingredient => {
+        if (ingredient && ingredient.materialName) {
+          recipeData.push([
+            ingredient.materialName,
+            (ingredient.amount || 0).toString(),
+            ingredient.unit || 'g',
+            (ingredient.amountInGrams || 0).toFixed(2),
+            formatCurrency(ingredient.cost || 0)
+          ]);
+        }
+      });
 
-    const recipeWs = XLSX.utils.aoa_to_sheet(recipeData);
-    recipeWs['!cols'] = [
-      { wch: 25 }, { wch: 10 }, { wch: 8 }, { wch: 12 }, { wch: 12 }
-    ];
+      const recipeWs = XLSX.utils.aoa_to_sheet(recipeData);
+      recipeWs['!cols'] = [
+        { wch: 35 }, { wch: 18 }, { wch: 12 }, { wch: 18 }, { wch: 20 }
+      ];
 
-    // Truncate sheet name if too long
-    const sheetName = recipe.name.length > 31 ? recipe.name.substring(0, 28) + '...' : recipe.name;
-    XLSX.utils.book_append_sheet(wb, recipeWs, sheetName);
+      // Set row heights for elegant appearance
+      recipeWs['!rows'] = [
+        { hpt: 35 }, // Main header
+        { hpt: 22 }, // Empty row
+        { hpt: 28 }, // Section header
+        ...Array(3).fill({ hpt: 25 }), // Info rows
+        { hpt: 22 }, // Empty row
+        { hpt: 26 }, // Column headers
+        ...Array(recipe.ingredients.length).fill({ hpt: 24 }) // Ingredient rows
+      ];
+
+      // Apply styling
+      applyCellStyle(recipeWs, 'A1', styles.mainHeader);
+      applyCellStyle(recipeWs, 'A3', styles.sectionHeader);
+      
+      // Column headers
+      for (let col = 0; col < 5; col++) {
+        const cellRef = XLSX.utils.encode_cell({ r: 7, c: col });
+        applyCellStyle(recipeWs, cellRef, styles.columnHeader);
+      }
+
+      // Data rows with alternating colors
+      for (let i = 0; i < recipe.ingredients.length; i++) {
+        const row = 8 + i;
+        const isAlternateRow = i % 2 === 1;
+        for (let col = 0; col < 5; col++) {
+          const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+          if (col === 0) {
+            applyCellStyle(recipeWs, cellRef, isAlternateRow ? styles.dataRowAlternate : styles.dataCell);
+          } else {
+            applyCellStyle(recipeWs, cellRef, isAlternateRow ? styles.numberRowAlternate : styles.numberCell);
+          }
+        }
+      }
+
+      const sheetName = recipe.name.length > 25 ? recipe.name.substring(0, 25) + '...' : recipe.name;
+      XLSX.utils.book_append_sheet(wb, recipeWs, sheetName.replace(/[^a-zA-Z0-9]/g, '_'));
+    }
   });
 
-  // Instructions sheet for multiple recipes
+  // Instructions sheet
   const instructionsData = [
-    ['📚 RECIPE COLLECTION GUIDE', '', ''],
-    ['', '', ''],
-    ['This workbook contains:', '', ''],
-    ['• Summary tab with all recipes overview', '', ''],
-    ['• Individual tabs for each recipe', '', ''],
-    ['• Cost analysis and comparisons', '', ''],
-    ['', '', ''],
-    ['How to use:', '', ''],
-    ['1. Start with the Summary tab for overview', '', ''],
-    ['2. Click individual recipe tabs for details', '', ''],
-    ['3. Use cost analysis to compare recipes', '', ''],
-    ['4. Reference batch sizes for scaling', '', ''],
-    ['', '', ''],
-    ['💡 Pro Tips:', '', ''],
-    ['• Compare cost per gram across recipes', '', ''],
-    ['• Use this data for pricing your products', '', ''],
-    ['• Keep this file as your recipe database', '', ''],
-    ['• Update costs when ingredient prices change', '', '']
+    ['📋 RECIPE COLLECTION GUIDE', '', ''],
+    [''], // Empty row
+    ['How to Use This Workbook:', '', ''],
+    ['Summary Tab:', 'Overview of all recipes in your collection', ''],
+    ['Individual Recipe Tabs:', 'Detailed breakdown of each recipe', ''],
+    [''], // Empty row
+    ['💡 Tips:', '', ''],
+    ['• Use the Summary tab to compare costs across recipes', '', ''],
+    ['• Individual recipe tabs show detailed ingredient breakdowns', '', ''],
+    ['• Cost analysis helps identify your most economical formulations', '', ''],
+    ['• Keep this file for your formulation library and reference', '', ''],
+    [''], // Empty row
+    ['📞 Support:', '', ''],
+    ['Generated by Beauty Formula Calculator', '', ''],
+    ['For formulation questions, consult a qualified cosmetic chemist', '', '']
   ];
 
   const instructionsWs = XLSX.utils.aoa_to_sheet(instructionsData);
-  instructionsWs['!cols'] = [{ wch: 30 }, { wch: 40 }, { wch: 15 }];
+  instructionsWs['!cols'] = [{ wch: 45 }, { wch: 60 }, { wch: 20 }];
+
+  // Set row heights for elegant appearance
+  instructionsWs['!rows'] = [
+    { hpt: 35 }, // Main header
+    { hpt: 22 }, // Empty row
+    { hpt: 28 }, // Section header
+    ...Array(instructionsData.length - 3).fill({ hpt: 25 }) // All other rows with comfortable spacing
+  ];
+
+  // Apply styling to instructions
+  applyCellStyle(instructionsWs, 'A1', styles.mainHeader);
+  applyCellStyle(instructionsWs, 'A3', styles.sectionHeader);
+  applyCellStyle(instructionsWs, 'A7', styles.sectionHeader);
+  applyCellStyle(instructionsWs, 'A13', styles.sectionHeader);
+
   XLSX.utils.book_append_sheet(wb, instructionsWs, 'How to Use');
 
   const timestamp = new Date().toISOString().split('T')[0];
@@ -454,53 +874,87 @@ export function exportMultipleRecipesToExcel(recipes: Recipe[]): void {
 }
 
 /**
- * Export raw materials inventory to Excel
+ * Export raw materials inventory to Excel with beautiful formatting
  */
 export function exportRawMaterialsToExcel(materials: RawMaterial[]): void {
   const wb = XLSX.utils.book_new();
   
-  // Inventory Overview
+  // Calculate statistics
+  const totalMaterials = materials.length;
+  const totalValue = materials.reduce((sum, material) => sum + (material.totalCost || 0), 0);
+  const avgCostPerGram = materials.length > 0 ? 
+    materials.reduce((sum, material) => sum + (material.costPerGram || 0), 0) / materials.length : 0;
+
+  // Inventory Overview Sheet with beautiful formatting
   const overviewData = [
-    ['📦 RAW MATERIALS INVENTORY', '', '', '', '', ''],
-    ['Generated on:', new Date().toLocaleString(), '', '', '', ''],
-    ['Total Materials:', materials.length.toString(), '', '', '', ''],
-    ['', '', '', '', '', ''],
-    ['Material Name', 'Total Weight', 'Total Cost', 'Cost/Gram', 'Cost/100g', 'Purchase Date'],
+    ['📦 RAW MATERIALS INVENTORY OVERVIEW', '', '', '', ''],
+    [''], // Empty row
+    ['Inventory Summary', '', '', '', ''],
+    ['Generated on:', new Date().toLocaleString(), '', '', ''],
+    ['Total Materials:', totalMaterials.toString(), '', '', ''],
+    ['Total Inventory Value:', formatCurrency(totalValue), '', '', ''],
+    ['Average Cost per Gram:', formatCurrency(avgCostPerGram), '', '', ''],
+    [''], // Empty row
+    ['Material Name', 'Weight', 'Unit', 'Cost per Gram', 'Total Cost']
   ];
 
-  let totalInventoryValue = 0;
   materials.forEach(material => {
-    totalInventoryValue += material.totalCost;
     overviewData.push([
       material.name,
-      formatWeight(material.totalWeight, material.weightUnit),
-      formatCurrency(material.totalCost),
-      formatCurrency(material.costPerGram),
-      formatCurrency(material.costPerGram * 100),
-      new Date().toLocaleDateString() // Could be actual purchase date if stored
+      material.totalWeight.toString(),
+      material.weightUnit,
+      formatCurrency(material.costPerGram || 0),
+      formatCurrency(material.totalCost || 0)
     ]);
   });
 
-  // Add summary statistics
-  overviewData.push(['', '', '', '', '', '']);
-  overviewData.push(['📊 INVENTORY SUMMARY', '', '', '', '', '']);
-  overviewData.push(['Total Inventory Value:', formatCurrency(totalInventoryValue), '', '', '', '']);
-  
-  const avgCostPerGram = materials.reduce((sum, m) => sum + m.costPerGram, 0) / materials.length;
-  overviewData.push(['Average Cost per Gram:', formatCurrency(avgCostPerGram), '', '', '', '']);
-
   const overviewWs = XLSX.utils.aoa_to_sheet(overviewData);
   overviewWs['!cols'] = [
-    { wch: 25 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 15 }
+    { wch: 40 }, { wch: 20 }, { wch: 15 }, { wch: 20 }, { wch: 20 }
   ];
+
+  // Set row heights for elegant appearance
+  overviewWs['!rows'] = [
+    { hpt: 35 }, // Main header
+    { hpt: 22 }, // Empty row
+    { hpt: 28 }, // Section header
+    ...Array(4).fill({ hpt: 25 }), // Info rows
+    { hpt: 22 }, // Empty row
+    { hpt: 26 }, // Column headers
+    ...Array(materials.length).fill({ hpt: 24 }) // Material rows
+  ];
+
+  // Apply beautiful styling
+  applyCellStyle(overviewWs, 'A1', styles.mainHeader);
+  applyCellStyle(overviewWs, 'A3', styles.sectionHeader);
+  
+  // Column headers
+  for (let col = 0; col < 5; col++) {
+    const cellRef = XLSX.utils.encode_cell({ r: 8, c: col });
+    applyCellStyle(overviewWs, cellRef, styles.columnHeader);
+  }
+  
+  // Data rows with alternating colors
+  for (let i = 0; i < materials.length; i++) {
+    const row = 9 + i;
+    const isAlternateRow = i % 2 === 1;
+    for (let col = 0; col < 5; col++) {
+      const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+      if (col === 0 || col === 2) {
+        applyCellStyle(overviewWs, cellRef, isAlternateRow ? styles.dataRowAlternate : styles.dataCell);
+      } else {
+        applyCellStyle(overviewWs, cellRef, isAlternateRow ? styles.numberRowAlternate : styles.numberCell);
+      }
+    }
+  }
 
   XLSX.utils.book_append_sheet(wb, overviewWs, 'Inventory Overview');
 
-  // Detailed materials list
+  // Detailed materials sheet
   const detailData = [
-    ['🔬 DETAILED MATERIALS LIST', '', '', '', '', ''],
-    ['', '', '', '', '', ''],
-    ['Material', 'Weight', 'Unit', 'Weight (g)', 'Total Cost', 'Cost/Gram'],
+    ['📋 DETAILED MATERIALS LIST', '', '', '', '', ''],
+    [''], // Empty row
+    ['Material Name', 'Total Weight', 'Unit', 'Weight (g)', 'Cost/Gram', 'Total Cost']
   ];
 
   materials.forEach(material => {
@@ -515,15 +969,46 @@ export function exportRawMaterialsToExcel(materials: RawMaterial[]): void {
       material.totalWeight.toString(),
       material.weightUnit,
       weightInGrams.toFixed(2),
-      formatCurrency(material.totalCost),
-      formatCurrency(material.costPerGram)
+      formatCurrency(material.costPerGram || 0),
+      formatCurrency(material.totalCost || 0)
     ]);
   });
 
   const detailWs = XLSX.utils.aoa_to_sheet(detailData);
   detailWs['!cols'] = [
-    { wch: 30 }, { wch: 12 }, { wch: 8 }, { wch: 12 }, { wch: 12 }, { wch: 12 }
+    { wch: 35 }, { wch: 20 }, { wch: 12 }, { wch: 18 }, { wch: 20 }, { wch: 20 }
   ];
+
+  // Set row heights for elegant appearance
+  detailWs['!rows'] = [
+    { hpt: 35 }, // Main header
+    { hpt: 22 }, // Empty row
+    { hpt: 26 }, // Column headers
+    ...Array(materials.length).fill({ hpt: 24 }) // Material rows
+  ];
+
+  // Apply styling
+  applyCellStyle(detailWs, 'A1', styles.mainHeader);
+  
+  // Column headers
+  for (let col = 0; col < 6; col++) {
+    const cellRef = XLSX.utils.encode_cell({ r: 2, c: col });
+    applyCellStyle(detailWs, cellRef, styles.columnHeader);
+  }
+  
+  // Data rows with alternating colors
+  for (let i = 0; i < materials.length; i++) {
+    const row = 3 + i;
+    const isAlternateRow = i % 2 === 1;
+    for (let col = 0; col < 6; col++) {
+      const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+      if (col === 0 || col === 2) {
+        applyCellStyle(detailWs, cellRef, isAlternateRow ? styles.dataRowAlternate : styles.dataCell);
+      } else {
+        applyCellStyle(detailWs, cellRef, isAlternateRow ? styles.numberRowAlternate : styles.numberCell);
+      }
+    }
+  }
 
   XLSX.utils.book_append_sheet(wb, detailWs, 'Materials Detail');
 
