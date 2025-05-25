@@ -14,7 +14,7 @@ import ExportButton from '@/components/ExportButton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calculator, Package, ChefHat, Info, ArrowRight, CheckCircle, Sparkles, Heart, Star, HelpCircle, Target, Lightbulb } from 'lucide-react';
+import { Calculator, Package, ChefHat, Info, ArrowRight, CheckCircle, Sparkles, Heart, Star, HelpCircle, Target, Lightbulb, Plus } from 'lucide-react';
 
 export default function Home() {
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
@@ -41,7 +41,6 @@ export default function Home() {
   // Raw Materials Management
   const handleSaveMaterial = (material: RawMaterial) => {
     let updatedMaterials;
-    const isEditing = editingMaterial;
     
     if (editingMaterial) {
       updatedMaterials = materials.map(m => m.id === material.id ? material : m);
@@ -55,7 +54,7 @@ export default function Home() {
     saveRawMaterials(updatedMaterials);
     
     // Auto-switch to recipes tab if this is the first material
-    if (!isEditing && updatedMaterials.length === 1) {
+    if (!editingMaterial && updatedMaterials.length === 1) {
       setTimeout(() => {
         setShowSuccessMessage('🚀 Great! Now you can create your first recipe!');
       }, 3500);
@@ -81,7 +80,6 @@ export default function Home() {
   // Recipes Management
   const handleSaveRecipe = (recipe: Recipe) => {
     let updatedRecipes;
-    const isEditing = editingRecipe;
     
     if (editingRecipe) {
       updatedRecipes = recipes.map(r => r.id === recipe.id ? recipe : r);
@@ -247,9 +245,13 @@ export default function Home() {
               transition={{ delay: 0.5 }}
               className="flex items-center gap-4"
             >
-              {recipes.length > 0 && (
-                <ExportButton recipes={recipes} />
-              )}
+              {/* Enhanced Export Options */}
+              <ExportButton 
+                variant="all" 
+                recipes={recipes} 
+                materials={materials}
+              />
+              
               {/* Help Button */}
               <motion.div whileHover={{ scale: 1.05 }}>
                 <Button
@@ -387,10 +389,10 @@ export default function Home() {
                     <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
                       <h4 className="font-semibold text-pink-700 mb-2 flex items-center gap-2">
                         <Package className="w-4 h-4" />
-                        What you'll need:
+                        What you&apos;ll need:
                       </h4>
                       <ul className="text-sm text-pink-600 space-y-1">
-                        <li>• Ingredient names (e.g., "Sweet Almond Oil")</li>
+                        <li>• Ingredient names (e.g., &ldquo;Sweet Almond Oil&rdquo;)</li>
                         <li>• Purchase prices (what you paid)</li>
                         <li>• Weights/quantities (how much you bought)</li>
                       </ul>
@@ -399,7 +401,7 @@ export default function Home() {
                     <div className="bg-white/60 rounded-lg p-4 border border-yellow-200/50">
                       <h4 className="font-semibold text-yellow-700 mb-2 flex items-center gap-2">
                         <ChefHat className="w-4 h-4" />
-                        What you'll get:
+                        What you&apos;ll get:
                       </h4>
                       <ul className="text-sm text-yellow-600 space-y-1">
                         <li>• Automatic cost-per-gram calculations</li>
@@ -497,7 +499,7 @@ export default function Home() {
                 <div className="bg-white/60 rounded-lg p-4 mb-6 text-left">
                   <h4 className="font-semibold text-yellow-700 mb-2">Quick example:</h4>
                   <p className="text-yellow-600 text-sm">
-                    Add "Sweet Almond Oil" → Cost: $15.99 → Weight: 500g → The calculator shows $0.0320/g
+                    Add &ldquo;Sweet Almond Oil&rdquo; → Cost: $15.99 → Weight: 500g → The calculator shows $0.0320/g
                   </p>
                 </div>
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -526,19 +528,132 @@ export default function Home() {
               exit="hidden"
               className="space-y-8"
             >
+              {/* Materials Collection Overview */}
+              {materials.length > 0 && (
+                <motion.div variants={itemVariants}>
+                  <Card className="bg-gradient-to-r from-purple-50/80 to-pink-50/80 backdrop-blur-sm border-purple-200/50 shadow-xl">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="flex items-center gap-3">
+                        <motion.div
+                          animate={{ rotate: [0, 10, -10, 0] }}
+                          transition={{ duration: 3, repeat: Infinity }}
+                        >
+                          <Package className="w-6 h-6 text-purple-600" />
+                        </motion.div>
+                        <div>
+                          <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            📦 Your Materials Collection
+                          </h3>
+                          <p className="text-sm text-purple-700 font-normal">
+                            Complete inventory of your beauty ingredients
+                          </p>
+                        </div>
+                        <div className="ml-auto">
+                          <ExportButton 
+                            variant="materials" 
+                            materials={materials}
+                          />
+                        </div>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-white/60 rounded-lg p-4 border border-purple-200/50">
+                          <div className="text-2xl font-bold text-purple-600">{materials.length}</div>
+                          <div className="text-sm text-purple-700">Total Materials</div>
+                        </div>
+                        <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
+                          <div className="text-2xl font-bold text-pink-600">
+                            ${materials.reduce((sum, m) => sum + m.totalCost, 0).toFixed(2)}
+                          </div>
+                          <div className="text-sm text-pink-700">Total Investment</div>
+                        </div>
+                        <div className="bg-white/60 rounded-lg p-4 border border-purple-200/50">
+                          <div className="text-2xl font-bold text-purple-600">
+                            ${(materials.reduce((sum, m) => sum + m.costPerGram, 0) / materials.length).toFixed(4)}
+                          </div>
+                          <div className="text-sm text-purple-700">Avg Cost/Gram</div>
+                        </div>
+                        <div className="bg-white/60 rounded-lg p-4 border border-pink-200/50">
+                          <div className="text-2xl font-bold text-pink-600">
+                            {materials.reduce((sum, m) => {
+                              let grams = m.totalWeight;
+                              if (m.weightUnit === 'kg') grams *= 1000;
+                              if (m.weightUnit === 'oz') grams *= 28.35;
+                              if (m.weightUnit === 'lb') grams *= 453.6;
+                              return sum + grams;
+                            }, 0).toFixed(0)}g
+                          </div>
+                          <div className="text-sm text-pink-700">Total Weight</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+
+              {/* Add New Material Section */}
               <motion.div variants={itemVariants}>
-                <RawMaterialForm
-                  material={editingMaterial}
-                  onSave={handleSaveMaterial}
-                  onCancel={handleCancelEditMaterial}
-                />
+                <Card className="bg-white/90 backdrop-blur-sm border-pink-200/50 shadow-xl">
+                  <CardHeader className="bg-gradient-to-r from-pink-500/10 to-purple-500/10 border-b border-pink-200/30">
+                    <CardTitle className="flex items-center gap-3">
+                      <motion.div
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                        className="p-2 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 text-white"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </motion.div>
+                      <div>
+                        <h3 className="text-xl font-bold bg-gradient-to-r from-pink-600 to-purple-600 bg-clip-text text-transparent">
+                          ✨ Add New Material
+                        </h3>
+                        <p className="text-sm text-muted-foreground font-normal">
+                          Add ingredients to your collection with automatic cost calculations
+                        </p>
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <RawMaterialForm
+                      material={editingMaterial}
+                      onSave={handleSaveMaterial}
+                      onCancel={handleCancelEditMaterial}
+                    />
+                  </CardContent>
+                </Card>
               </motion.div>
+
+              {/* Materials History & Storage */}
               <motion.div variants={itemVariants}>
-                <RawMaterialList
-                  materials={materials}
-                  onEdit={handleEditMaterial}
-                  onDelete={handleDeleteMaterial}
-                />
+                <Card className="bg-white/90 backdrop-blur-sm border-purple-200/50 shadow-xl">
+                  <CardHeader className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-b border-purple-200/30">
+                    <CardTitle className="flex items-center gap-3">
+                      <motion.div
+                        animate={{ scale: [1, 1.05, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                        className="p-2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+                      >
+                        <Package className="w-5 h-5" />
+                      </motion.div>
+                      <div>
+                        <h3 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                          📋 Materials History & Storage
+                        </h3>
+                        <p className="text-sm text-muted-foreground font-normal">
+                          View, edit, and manage all your stored ingredients
+                        </p>
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <RawMaterialList
+                      materials={materials}
+                      onEdit={handleEditMaterial}
+                      onDelete={handleDeleteMaterial}
+                    />
+                  </CardContent>
+                </Card>
               </motion.div>
             </motion.div>
           )}
@@ -552,6 +667,67 @@ export default function Home() {
               exit="hidden"
               className="space-y-8"
             >
+              {/* Recipe Collection Overview */}
+              {recipes.length > 0 && (
+                <motion.div variants={itemVariants}>
+                  <Card className="bg-gradient-to-r from-emerald-50/80 to-green-50/80 backdrop-blur-sm border-emerald-200/50 shadow-xl">
+                    <CardHeader className="pb-4">
+                      <CardTitle className="flex items-center gap-3">
+                        <motion.div
+                          animate={{ rotate: [0, 15, -15, 0] }}
+                          transition={{ duration: 4, repeat: Infinity }}
+                        >
+                          <ChefHat className="w-6 h-6 text-emerald-600" />
+                        </motion.div>
+                        <div>
+                          <h3 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                            🧪 Your Recipe Collection
+                          </h3>
+                          <p className="text-sm text-emerald-700 font-normal">
+                            Beautiful formulations with calculated costs
+                          </p>
+                        </div>
+                        <div className="ml-auto">
+                          <ExportButton 
+                            variant="recipes" 
+                            recipes={recipes}
+                          />
+                        </div>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="bg-white/60 rounded-lg p-4 border border-emerald-200/50">
+                          <div className="text-2xl font-bold text-emerald-600">{recipes.length}</div>
+                          <div className="text-sm text-emerald-700">Total Recipes</div>
+                        </div>
+                        <div className="bg-white/60 rounded-lg p-4 border border-green-200/50">
+                          <div className="text-2xl font-bold text-green-600">
+                            ${recipes.reduce((sum, r) => sum + r.totalCost, 0).toFixed(2)}
+                          </div>
+                          <div className="text-sm text-green-700">Total Recipe Costs</div>
+                        </div>
+                        <div className="bg-white/60 rounded-lg p-4 border border-emerald-200/50">
+                          <div className="text-2xl font-bold text-emerald-600">
+                            ${recipes.filter(r => r.costPerUnit).length > 0 
+                              ? (recipes.filter(r => r.costPerUnit).reduce((sum, r) => sum + (r.costPerUnit || 0), 0) / recipes.filter(r => r.costPerUnit).length).toFixed(4)
+                              : '0.0000'
+                            }
+                          </div>
+                          <div className="text-sm text-emerald-700">Avg Cost/Gram</div>
+                        </div>
+                        <div className="bg-white/60 rounded-lg p-4 border border-green-200/50">
+                          <div className="text-2xl font-bold text-green-600">
+                            {recipes.reduce((sum, r) => sum + r.ingredients.reduce((iSum, i) => iSum + i.amountInGrams, 0), 0).toFixed(0)}g
+                          </div>
+                          <div className="text-sm text-green-700">Total Formulated</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+              
               {/* Enhanced Recipe Guide */}
               {recipes.length === 0 && (
                 <motion.div variants={itemVariants}>
@@ -583,7 +759,7 @@ export default function Home() {
                             </div>
                             
                             <div className="bg-white/60 rounded-lg p-4 border border-emerald-200/50">
-                              <h4 className="font-semibold text-emerald-700 mb-2">📊 You'll see:</h4>
+                              <h4 className="font-semibold text-emerald-700 mb-2">📊 You&apos;ll see:</h4>
                               <ul className="text-sm text-emerald-600 space-y-1">
                                 <li>• Total recipe cost</li>
                                 <li>• Cost breakdown by ingredient</li>
@@ -605,24 +781,75 @@ export default function Home() {
                 </motion.div>
               )}
               
+              {/* Create New Recipe Section */}
               <motion.div variants={itemVariants}>
-                <RecipeForm
-                  recipe={editingRecipe}
-                  materials={materials}
-                  onSave={handleSaveRecipe}
-                  onCancel={handleCancelEditRecipe}
-                />
+                <Card className="bg-white/90 backdrop-blur-sm border-green-200/50 shadow-xl">
+                  <CardHeader className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-b border-green-200/30">
+                    <CardTitle className="flex items-center gap-3">
+                      <motion.div
+                        whileHover={{ scale: 1.1, rotate: 5 }}
+                        transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                        className="p-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-500 text-white"
+                      >
+                        <Plus className="w-5 h-5" />
+                      </motion.div>
+                      <div>
+                        <h3 className="text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                          ✨ Create New Recipe
+                        </h3>
+                        <p className="text-sm text-muted-foreground font-normal">
+                          Build beautiful formulations with automatic cost calculations
+                        </p>
+                      </div>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <RecipeForm
+                      recipe={editingRecipe}
+                      materials={materials}
+                      onSave={handleSaveRecipe}
+                      onCancel={handleCancelEditRecipe}
+                    />
+                  </CardContent>
+                </Card>
               </motion.div>
-              <motion.div variants={itemVariants}>
-                <RecipeList
-                  recipes={recipes}
-                  materials={materials}
-                  onEdit={handleEditRecipe}
-                  onDelete={handleDeleteRecipe}
-                  onExport={handleExportRecipe}
-                  onUpdateRecipe={handleUpdateRecipe}
-                />
-              </motion.div>
+
+              {/* Recipe History & Storage */}
+              {recipes.length > 0 && (
+                <motion.div variants={itemVariants}>
+                  <Card className="bg-white/90 backdrop-blur-sm border-emerald-200/50 shadow-xl">
+                    <CardHeader className="bg-gradient-to-r from-emerald-500/10 to-green-500/10 border-b border-emerald-200/30">
+                      <CardTitle className="flex items-center gap-3">
+                        <motion.div
+                          animate={{ scale: [1, 1.05, 1] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                          className="p-2 rounded-full bg-gradient-to-r from-emerald-500 to-green-500 text-white"
+                        >
+                          <ChefHat className="w-5 h-5" />
+                        </motion.div>
+                        <div>
+                          <h3 className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-green-600 bg-clip-text text-transparent">
+                            📚 Recipe History & Collection
+                          </h3>
+                          <p className="text-sm text-muted-foreground font-normal">
+                            View, edit, export, and manage all your saved recipes
+                          </p>
+                        </div>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <RecipeList
+                        recipes={recipes}
+                        materials={materials}
+                        onEdit={handleEditRecipe}
+                        onDelete={handleDeleteRecipe}
+                        onExport={handleExportRecipe}
+                        onUpdateRecipe={handleUpdateRecipe}
+                      />
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

@@ -1,4 +1,4 @@
-import { Recipe, RecipeIngredient, ScaledRecipe } from '@/types';
+import { Recipe, RecipeIngredient, ScaledRecipe, RawMaterial } from '@/types';
 import { convertToGrams, calculateCost } from './conversions';
 
 /**
@@ -7,7 +7,7 @@ import { convertToGrams, calculateCost } from './conversions';
 export function scaleRecipe(
   recipe: Recipe, 
   newBatchSize: number, 
-  materials: any[]
+  materials: RawMaterial[]
 ): ScaledRecipe {
   const originalBatchSize = recipe.originalBatchSize || recipe.batchSize || getTotalRecipeWeight(recipe);
   const scalingFactor = newBatchSize / originalBatchSize;
@@ -75,7 +75,7 @@ export function getScalingOptions(recipe: Recipe): number[] {
   const currentSize = recipe.batchSize || getTotalRecipeWeight(recipe);
   
   // Generate smart scaling options based on current size
-  let baseOptions = [5, 10, 15, 20, 25, 30, 50, 75, 100, 150, 200, 250, 500, 1000];
+  const baseOptions = [5, 10, 15, 20, 25, 30, 50, 75, 100, 150, 200, 250, 500, 1000];
   
   // Add size-specific options
   const customOptions = [
