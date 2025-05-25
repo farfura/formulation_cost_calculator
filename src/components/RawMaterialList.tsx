@@ -2,7 +2,9 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { RawMaterial } from '@/types';
-import { formatCurrency, formatWeight } from '@/utils/conversions';
+import { formatWeight } from '@/utils/conversions';
+import { formatCurrency } from '@/utils/currency';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +17,8 @@ interface RawMaterialListProps {
 }
 
 export default function RawMaterialList({ materials, onEdit, onDelete }: RawMaterialListProps) {
+  const { currency } = useCurrency();
+
   if (materials.length === 0) {
     return (
       <motion.div
@@ -151,7 +155,7 @@ export default function RawMaterialList({ materials, onEdit, onDelete }: RawMate
                               <DollarSign className="w-4 h-4 text-green-500" />
                               <span>Total Cost:</span>
                               <span className="font-semibold text-primary">
-                                {formatCurrency(material.totalCost)}
+                                {formatCurrency(material.totalCost, currency)}
                               </span>
                             </motion.div>
                             
@@ -173,7 +177,7 @@ export default function RawMaterialList({ materials, onEdit, onDelete }: RawMate
                               <Calculator className="w-4 h-4 text-purple-500" />
                               <span>Cost/gram:</span>
                               <Badge variant="secondary" className="bg-gradient-to-r from-pink-100 to-yellow-100 text-primary border-pink-200">
-                                {formatCurrency(material.costPerGram)}/g ✨
+                                {formatCurrency(material.costPerGram, currency)}/g ✨
                               </Badge>
                             </motion.div>
                           </div>

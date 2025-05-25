@@ -1,5 +1,18 @@
 export type WeightUnit = 'g' | 'kg' | 'oz' | 'lb';
 
+export type Currency = 'USD' | 'PKR' | 'EUR' | 'GBP' | 'CAD' | 'AUD' | 'INR' | 'JPY' | 'CNY';
+
+export interface CurrencyInfo {
+  code: Currency;
+  symbol: string;
+  name: string;
+  locale: string;
+}
+
+export interface AppSettings {
+  currency: Currency;
+}
+
 export interface RawMaterial {
   id: string;
   name: string;

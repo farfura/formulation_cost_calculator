@@ -5,18 +5,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { RawMaterial, Recipe } from '@/types';
 import { getRawMaterials, saveRawMaterials, getRecipes, saveRecipes } from '@/utils/storage';
 import { exportToExcel } from '@/utils/export';
+import { useCurrency } from '@/contexts/CurrencyContext';
+import { formatCurrency } from '@/utils/currency';
 
 import RawMaterialForm from '@/components/RawMaterialForm';
 import RawMaterialList from '@/components/RawMaterialList';
 import RecipeForm from '@/components/RecipeForm';
 import RecipeList from '@/components/RecipeList';
 import ExportButton from '@/components/ExportButton';
+import CurrencySelector from '@/components/CurrencySelector';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calculator, Package, ChefHat, Info, ArrowRight, CheckCircle, Sparkles, Heart, Star, HelpCircle, Target, Lightbulb, Plus, TrendingUp, Beaker, Palette, Download, BarChart3, Layers, Zap } from 'lucide-react';
 
 export default function Home() {
+  const { currency } = useCurrency();
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [editingMaterial, setEditingMaterial] = useState<RawMaterial | undefined>();
@@ -299,6 +303,8 @@ export default function Home() {
               transition={{ delay: 0.5 }}
               className="flex items-center gap-4"
             >
+              <CurrencySelector showLabel={false} className="w-48" />
+              
               <ExportButton 
                 variant="all" 
                 recipes={recipes} 
@@ -411,7 +417,7 @@ export default function Home() {
                         <div className="flex items-center justify-between">
                           <div>
                             <p className="text-pink-100 text-sm font-medium">Investment</p>
-                            <p className="text-3xl font-bold">${totalInvestment.toFixed(2)}</p>
+                            <p className="text-3xl font-bold">{formatCurrency(totalInvestment, currency)}</p>
                           </div>
                           <motion.div
                             animate={{ y: [0, -5, 0] }}
@@ -810,7 +816,7 @@ export default function Home() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
-                          ${avgCostPerGram.toFixed(4)}
+                          {formatCurrency(avgCostPerGram, currency)}
                         </div>
                         <p className="text-xs text-gray-500">Across all materials ✨</p>
                       </CardContent>
@@ -854,7 +860,7 @@ export default function Home() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
-                          ${totalRecipeCosts.toFixed(2)}
+                          {formatCurrency(totalRecipeCosts, currency)}
                         </div>
                         <p className="text-xs text-gray-500">Total recipe costs 🧪</p>
                       </CardContent>

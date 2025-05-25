@@ -4,7 +4,9 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Recipe, RawMaterial } from '@/types';
 import { scaleRecipe, getScalingOptions, getTotalRecipeWeight, formatScalingFactor } from '@/utils/scaling';
-import { formatCurrency, formatWeight } from '@/utils/conversions';
+import { formatWeight } from '@/utils/conversions';
+import { formatCurrency } from '@/utils/currency';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +22,7 @@ interface RecipeScalingProps {
 }
 
 export default function RecipeScaling({ recipe, materials, onScaledRecipe, className = '' }: RecipeScalingProps) {
+  const { currency } = useCurrency();
   const [isOpen, setIsOpen] = useState(false);
   const [customSize, setCustomSize] = useState<number>(100);
   const [selectedSize, setSelectedSize] = useState<number | null>(null);
@@ -91,7 +94,7 @@ export default function RecipeScaling({ recipe, materials, onScaledRecipe, class
                       ⚖️ Scale Recipe: {recipe.name}
                     </h3>
                     <p className="text-sm text-muted-foreground font-normal">
-                      Current size: {formatWeight(currentSize, 'g')} • Cost: {formatCurrency(recipe.totalCost)}
+                      Current size: {formatWeight(currentSize, 'g')} • Cost: {formatCurrency(recipe.totalCost, currency)}
                     </p>
                   </div>
                   <motion.button
@@ -229,7 +232,7 @@ export default function RecipeScaling({ recipe, materials, onScaledRecipe, class
                           <p className="font-medium text-green-800">Recipe Scaled Successfully! 🎉</p>
                           <p className="text-sm text-green-600">
                             New size: {formatWeight(selectedSize, 'g')} • 
-                            New cost: {formatCurrency(scaleRecipe(recipe, selectedSize, materials).totalCost)}
+                            New cost: {formatCurrency(scaleRecipe(recipe, selectedSize, materials).totalCost, currency)}
                           </p>
                         </div>
                       </div>

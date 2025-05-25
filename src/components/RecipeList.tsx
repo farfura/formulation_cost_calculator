@@ -2,7 +2,9 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { Recipe, RawMaterial } from '@/types';
-import { formatCurrency, formatWeight } from '@/utils/conversions';
+import { formatWeight } from '@/utils/conversions';
+import { formatCurrency } from '@/utils/currency';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { getTotalRecipeWeight, calculateIngredientPercentages } from '@/utils/scaling';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +23,8 @@ interface RecipeListProps {
 }
 
 export default function RecipeList({ recipes, materials, onEdit, onDelete, onExport, onUpdateRecipe }: RecipeListProps) {
+  const { currency } = useCurrency();
+
   if (recipes.length === 0) {
     return (
       <motion.div
@@ -255,7 +259,7 @@ export default function RecipeList({ recipes, materials, onEdit, onDelete, onExp
                                   <div>
                                     <p className="text-white/80 text-sm font-medium">Total Cost</p>
                                     <p className="font-bold text-white text-xl">
-                                      {formatCurrency(recipe.totalCost)}
+                                      {formatCurrency(recipe.totalCost, currency)}
                                     </p>
                                   </div>
                                 </div>
@@ -417,7 +421,7 @@ export default function RecipeList({ recipes, materials, onEdit, onDelete, onExp
                                 
                                 <div className="col-span-2 text-center">
                                   <span className="font-bold text-emerald-600 text-lg">
-                                    {formatCurrency(ingredient.cost)}
+                                    {formatCurrency(ingredient.cost, currency)}
                                   </span>
                                 </div>
                               </motion.div>
@@ -434,7 +438,7 @@ export default function RecipeList({ recipes, materials, onEdit, onDelete, onExp
                               </div>
                               <div className="col-span-2 text-center">100.0%</div>
                               <div className="col-span-2 text-center text-lg">
-                                {formatCurrency(recipe.totalCost)}
+                                {formatCurrency(recipe.totalCost, currency)}
                               </div>
                             </div>
                           </div>
@@ -444,7 +448,7 @@ export default function RecipeList({ recipes, materials, onEdit, onDelete, onExp
                         <div className="flex flex-wrap gap-3 mt-6">
                           {recipe.costPerUnit && (
                             <Badge variant="outline" className="bg-gradient-to-r from-emerald-100 to-mint-100 text-emerald-700 border-emerald-200 px-3 py-1">
-                              💰 {formatCurrency(recipe.costPerUnit)}/unit
+                              💰 {formatCurrency(recipe.costPerUnit, currency)}/unit
                             </Badge>
                           )}
                           {recipe.batchSize && (

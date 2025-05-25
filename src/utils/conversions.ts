@@ -1,4 +1,5 @@
 import { WeightUnit } from '@/types';
+import { formatCurrency as formatCurrencyWithLocale } from './currency';
 
 /**
  * Convert weight to grams based on the unit
@@ -35,14 +36,10 @@ export function calculateCostPerGram(totalCost: number, totalWeight: number, uni
 
 /**
  * Format currency value
+ * @deprecated Use formatCurrency from './currency' with currency parameter instead
  */
 export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 4,
-  }).format(amount);
+  return formatCurrencyWithLocale(amount, 'USD');
 }
 
 /**

@@ -3,7 +3,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Recipe, RawMaterial, RecipeIngredient, WeightUnit } from '@/types';
-import { convertToGrams, calculateCost, formatCurrency, formatWeight } from '@/utils/conversions';
+import { convertToGrams, calculateCost, formatWeight } from '@/utils/conversions';
+import { formatCurrency } from '@/utils/currency';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +19,7 @@ interface RecipeFormProps {
 }
 
 export default function RecipeForm({ recipe, materials, onSave, onCancel }: RecipeFormProps) {
+  const { currency } = useCurrency();
   const [recipeName, setRecipeName] = useState('');
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
   const [batchSize, setBatchSize] = useState<number | undefined>();
@@ -306,7 +309,7 @@ export default function RecipeForm({ recipe, materials, onSave, onCancel }: Reci
                             <div className="bg-gradient-to-r from-emerald-100 to-mint-100 rounded-xl p-3 text-center">
                               <p className="text-xs text-emerald-600 font-medium">Cost</p>
                               <p className="text-sm font-bold text-emerald-700">
-                                {formatCurrency(ingredient.cost)}
+                                {formatCurrency(ingredient.cost, currency)}
                               </p>
                               <p className="text-xs text-emerald-600">
                                 ({formatWeight(ingredient.amountInGrams, 'g')})
@@ -416,7 +419,7 @@ export default function RecipeForm({ recipe, materials, onSave, onCancel }: Reci
                       <Heart className="w-5 h-5 text-emerald-400" />
                       <span className="font-semibold text-cream-600">Total Recipe Cost</span>
                     </div>
-                    <span className="text-3xl font-bold text-emerald-600">{formatCurrency(totalCost)}</span>
+                    <span className="text-3xl font-bold text-emerald-600">{formatCurrency(totalCost, currency)}</span>
                   </motion.div>
                   
                   {costPerUnit && (
@@ -428,7 +431,7 @@ export default function RecipeForm({ recipe, materials, onSave, onCancel }: Reci
                         <Zap className="w-5 h-5 text-sky-400" />
                         <span className="font-semibold text-cream-600">Cost per Unit</span>
                       </div>
-                      <span className="text-3xl font-bold text-sky-600">{formatCurrency(costPerUnit)}</span>
+                      <span className="text-3xl font-bold text-sky-600">{formatCurrency(costPerUnit, currency)}</span>
                     </motion.div>
                   )}
                 </div>
