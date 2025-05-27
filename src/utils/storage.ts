@@ -1,7 +1,8 @@
-import { RawMaterial, Recipe } from '@/types';
+import { RawMaterial, Recipe, PackagingItem } from '@/types';
 
-const RAW_MATERIALS_KEY = 'formulation_raw_materials';
-const RECIPES_KEY = 'formulation_recipes';
+const RAW_MATERIALS_KEY = 'formulationCalculator_rawMaterials';
+const RECIPES_KEY = 'formulationCalculator_recipes';
+const PACKAGING_KEY = 'formulationCalculator_packaging';
 
 /**
  * Raw Materials Storage
@@ -50,5 +51,28 @@ export function saveRecipes(recipes: Recipe[]): void {
     localStorage.setItem(RECIPES_KEY, JSON.stringify(recipes));
   } catch (error) {
     console.error('Error saving recipes:', error);
+  }
+}
+
+// Packaging
+export function getPackagingItems(): PackagingItem[] {
+  if (typeof window === 'undefined') return [];
+  
+  try {
+    const stored = localStorage.getItem(PACKAGING_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch (error) {
+    console.error('Error loading packaging items:', error);
+    return [];
+  }
+}
+
+export function savePackagingItems(packaging: PackagingItem[]): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    localStorage.setItem(PACKAGING_KEY, JSON.stringify(packaging));
+  } catch (error) {
+    console.error('Error saving packaging items:', error);
   }
 } 

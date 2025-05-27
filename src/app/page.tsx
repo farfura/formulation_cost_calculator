@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { RawMaterial, Recipe } from '@/types';
-import { getRawMaterials, saveRawMaterials, getRecipes, saveRecipes } from '@/utils/storage';
+import { RawMaterial, Recipe, PackagingItem } from '@/types';
+import { getRawMaterials, saveRawMaterials, getRecipes, saveRecipes, getPackagingItems } from '@/utils/storage';
 import { exportToExcel } from '@/utils/export';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { formatCurrency } from '@/utils/currency';
@@ -14,26 +14,31 @@ import RecipeForm from '@/components/RecipeForm';
 import RecipeList from '@/components/RecipeList';
 import ExportButton from '@/components/ExportButton';
 import CurrencySelector from '@/components/CurrencySelector';
+import PackagingManager from '@/components/PackagingManager';
+import LabelGenerator from '@/components/LabelGenerator';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calculator, Package, ChefHat, Info, ArrowRight, CheckCircle, Sparkles, Heart, Star, HelpCircle, Target, Lightbulb, Plus, TrendingUp, Beaker, Palette, Download, BarChart3, Layers, Zap } from 'lucide-react';
+import { Calculator, Package, ChefHat, Info, ArrowRight, CheckCircle, Sparkles, Heart, Star, HelpCircle, Target, Lightbulb, Plus, TrendingUp, Beaker, Palette, Download, BarChart3, Layers, Zap, Tag } from 'lucide-react';
 
 export default function Home() {
   const { currency } = useCurrency();
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [packaging, setPackaging] = useState<PackagingItem[]>([]);
   const [editingMaterial, setEditingMaterial] = useState<RawMaterial | undefined>();
   const [editingRecipe, setEditingRecipe] = useState<Recipe | undefined>();
   const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [showRecipeForm, setShowRecipeForm] = useState(false);
-  const [activeSection, setActiveSection] = useState<'overview' | 'materials' | 'recipes' | 'analytics'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'materials' | 'recipes' | 'packaging' | 'labels' | 'analytics'>('overview');
   const [showSuccessMessage, setShowSuccessMessage] = useState<string>('');
+  const [selectedRecipeForLabel, setSelectedRecipeForLabel] = useState<Recipe | null>(null);
 
   // Load data from localStorage on component mount
   useEffect(() => {
     setMaterials(getRawMaterials());
     setRecipes(getRecipes());
+    setPackaging(getPackagingItems());
   }, []);
 
   // Show success message temporarily
@@ -163,7 +168,9 @@ export default function Home() {
     { id: 'overview', label: 'Overview', icon: BarChart3, color: 'from-yellow-400 to-amber-400', bg: 'from-yellow-50 to-amber-50', text: 'text-yellow-600' },
     { id: 'materials', label: 'Materials', icon: Package, color: 'from-pink-400 to-rose-400', bg: 'from-pink-50 to-rose-50', text: 'text-pink-600' },
     { id: 'recipes', label: 'Recipes', icon: ChefHat, color: 'from-purple-400 to-violet-400', bg: 'from-purple-50 to-violet-50', text: 'text-purple-600' },
-    { id: 'analytics', label: 'Analytics', icon: TrendingUp, color: 'from-orchid-400 to-plum-400', bg: 'from-orchid-50 to-plum-50', text: 'text-orchid-600' },
+    { id: 'packaging', label: 'Packaging', icon: Palette, color: 'from-blue-400 to-indigo-400', bg: 'from-blue-50 to-indigo-50', text: 'text-blue-600' },
+    { id: 'labels', label: 'Labels', icon: Tag, color: 'from-green-400 to-emerald-400', bg: 'from-green-50 to-emerald-50', text: 'text-green-600' },
+    { id: 'analytics', label: 'Analytics', icon: TrendingUp, color: 'from-orange-400 to-red-400', bg: 'from-orange-50 to-red-50', text: 'text-orange-600' },
   ];
 
   return (
@@ -778,6 +785,139 @@ export default function Home() {
             </motion.div>
           )}
 
+          {/* Packaging Section */}
+          {activeSection === 'packaging' && (
+            <motion.div
+              key="packaging"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              className="space-y-6"
+            >
+              <motion.div variants={itemVariants}>
+                <PackagingManager />
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Labels Section */}
+          {activeSection === 'labels' && (
+            <motion.div
+              key="labels"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              className="space-y-6"
+            >
+              <motion.div variants={itemVariants}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-orchid-600 to-plum-600 bg-clip-text text-transparent">
+                      🏷️ Label Generation
+                    </h2>
+                    <p className="text-gray-600 flex items-center gap-1">
+                      Generate labels for your products <Sparkles className="w-4 h-4 text-orchid-500" />
+                    </p>
+                  </div>
+                  {recipes.length > 0 && (
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Button
+                        onClick={() => setSelectedRecipeForLabel(recipes[0])}
+                        className="bg-gradient-to-r from-orchid-500 to-plum-500 hover:from-orchid-600 hover:to-plum-600 text-white shadow-lg"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Generate Label ✨
+                      </Button>
+                    </motion.div>
+                  )}
+                </div>
+              </motion.div>
+
+              <motion.div variants={itemVariants}>
+                <Card className="bg-white/95 backdrop-blur-sm border-purple-200/60 shadow-xl">
+                  <CardContent className="p-6">
+                    {materials.length === 0 ? (
+                      <div className="text-center py-12">
+                        <motion.div
+                          animate={{ rotate: [0, 10, -10, 0] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        >
+                          <ChefHat className="w-20 h-20 text-purple-400 mx-auto mb-6" />
+                        </motion.div>
+                        <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent mb-3">
+                          No materials to generate labels for! 🌟
+                        </h3>
+                        <p className="text-lg text-gray-600 mb-6">Add materials to generate labels</p>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button
+                            onClick={() => setActiveSection('materials')}
+                            className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white px-8 py-3 text-lg font-semibold shadow-lg"
+                          >
+                            <Plus className="w-5 h-5 mr-2" />
+                            Go to Materials 💕
+                          </Button>
+                        </motion.div>
+                      </div>
+                    ) : recipes.length === 0 ? (
+                      <div className="text-center py-12">
+                        <motion.div
+                          animate={{ y: [0, -10, 0] }}
+                          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                        >
+                          <ChefHat className="w-20 h-20 text-purple-400 mx-auto mb-6" />
+                        </motion.div>
+                        <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent mb-3">
+                          No recipes to generate labels for! 👩‍🍳
+                        </h3>
+                        <p className="text-lg text-gray-600 mb-2">Ready to create recipes to generate labels?</p>
+                        <p className="text-sm text-gray-500 mb-6">
+                          You have {materials.length} ingredient{materials.length > 1 ? 's' : ''} ready to use! ✨
+                        </p>
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                          <Button
+                            onClick={() => setShowRecipeForm(true)}
+                            className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white px-8 py-3 text-lg font-semibold shadow-lg"
+                          >
+                            <Plus className="w-5 h-5 mr-2" />
+                            Create Recipes to Generate Labels 🌟
+                          </Button>
+                        </motion.div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="text-center">
+                          <p className="text-lg text-gray-600">Select a recipe to generate a label for:</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {recipes.map((recipe) => (
+                            <motion.div
+                              key={recipe.id}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <Button
+                                onClick={() => setSelectedRecipeForLabel(recipe)}
+                                className="w-full h-full p-4 bg-white hover:bg-gray-50 border border-purple-200 rounded-lg text-left flex flex-col gap-2"
+                                variant="outline"
+                              >
+                                <div className="font-semibold text-purple-700">{recipe.name}</div>
+                                <div className="text-sm text-gray-600">
+                                  {recipe.ingredients.length} ingredients
+                                </div>
+                              </Button>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </motion.div>
+          )}
+
           {/* Analytics Section */}
           {activeSection === 'analytics' && (
             <motion.div
@@ -961,6 +1101,16 @@ export default function Home() {
               </div>
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Label Generator Modal */}
+      <AnimatePresence>
+        {selectedRecipeForLabel && (
+          <LabelGenerator
+            recipe={selectedRecipeForLabel}
+            onClose={() => setSelectedRecipeForLabel(null)}
+          />
         )}
       </AnimatePresence>
     </div>

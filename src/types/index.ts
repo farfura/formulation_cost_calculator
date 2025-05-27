@@ -22,6 +22,15 @@ export interface RawMaterial {
   costPerGram: number;
 }
 
+export interface PackagingItem {
+  id: string;
+  name: string;
+  cost: number;
+  description?: string;
+  supplier?: string;
+  category: 'container' | 'label' | 'cap' | 'pump' | 'box' | 'other';
+}
+
 export interface RecipeIngredient {
   materialId: string;
   materialName: string;
@@ -40,6 +49,11 @@ export interface Recipe {
   numberOfUnits?: number;
   costPerUnit?: number;
   originalBatchSize?: number;
+  packaging?: PackagingItem[];
+  totalPackagingCost?: number;
+  category?: string;
+  description?: string;
+  instructions?: string;
 }
 
 export interface ScaledRecipe extends Recipe {
@@ -55,4 +69,35 @@ export interface ExportData {
   totalCost: number;
   recipeTotalCost: number;
   costPerUnit?: number;
+}
+
+export interface LabelData {
+  productName: string;
+  brandName?: string;
+  description?: string;
+  ingredients: {
+    name: string;
+    percentage: number;
+    inci?: string;
+  }[];
+  netWeight: string;
+  warnings?: string[];
+  instructions?: string;
+  batchNumber?: string;
+  expiryDate?: string;
+  madeIn?: string;
+}
+
+export interface LabelSettings {
+  template: 'minimal' | 'elegant' | 'modern' | 'vintage';
+  colorScheme: 'pink' | 'purple' | 'green' | 'blue' | 'gold';
+  fontSize: 'small' | 'medium' | 'large';
+  showPercentages: boolean;
+  showInci: boolean;
+  logoUrl?: string;
+  dimensions: {
+    width: number;
+    height: number;
+    unit: 'mm' | 'cm' | 'in';
+  };
 } 
