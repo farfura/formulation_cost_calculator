@@ -3,7 +3,17 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RawMaterial, Recipe, PackagingItem } from '@/types';
-import { getRawMaterials, saveRawMaterials, getRecipes, saveRecipes, getPackagingItems } from '@/utils/storage';
+import { 
+  getRawMaterialsFromDB, 
+  saveRawMaterialToDB, 
+  deleteRawMaterialFromDB,
+  getRecipesFromDB,
+  saveRecipeToDB,
+  deleteRecipeFromDB,
+  getPackagingItemsFromDB,
+  savePackagingItemToDB,
+  deletePackagingItemFromDB
+} from '@/utils/db';
 import { exportToExcel } from '@/utils/export';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { formatCurrency } from '@/utils/currency';
@@ -19,7 +29,7 @@ import LabelGenerator from '@/components/LabelGenerator';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calculator, Package, ChefHat, Info, ArrowRight, CheckCircle, Sparkles, Heart, Star, HelpCircle, Target, Lightbulb, Plus, TrendingUp, Beaker, Palette, Download, BarChart3, Layers, Zap, Tag } from 'lucide-react';
+import { Calculator, Package, ChefHat, Info, ArrowRight, CheckCircle, Sparkles, Heart, Star, HelpCircle, Target, Lightbulb, Plus, TrendingUp, Beaker, Palette, Download, BarChart3, Layers, Zap, Tag, History } from 'lucide-react';
 
 export default function Home() {
   const { currency } = useCurrency();
@@ -30,15 +40,35 @@ export default function Home() {
   const [editingRecipe, setEditingRecipe] = useState<Recipe | undefined>();
   const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [showRecipeForm, setShowRecipeForm] = useState(false);
-  const [activeSection, setActiveSection] = useState<'overview' | 'materials' | 'recipes' | 'packaging' | 'labels' | 'analytics'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'materials' | 'recipes' | 'packaging' | 'labels' | 'analytics' | 'history'>('overview');
   const [showSuccessMessage, setShowSuccessMessage] = useState<string>('');
   const [selectedRecipeForLabel, setSelectedRecipeForLabel] = useState<Recipe | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string>('');
 
-  // Load data from localStorage on component mount
+  // Load data from database on component mount
   useEffect(() => {
-    setMaterials(getRawMaterials());
-    setRecipes(getRecipes());
-    setPackaging(getPackagingItems());
+    const loadData = async () => {
+      console.log('Starting to load data...');
+      setLoading(true);
+      try {
+        const [materialsData, recipesData, packagingData] = await Promise.all([
+          getRawMaterialsFromDB(),
+          getRecipesFromDB(),
+          getPackagingItemsFromDB()
+        ]);
+        console.log('Loaded recipes:', recipesData);
+        setMaterials(materialsData);
+        setRecipes(recipesData);
+        setPackaging(packagingData);
+      } catch (err) {
+        console.error('Error loading data:', err);
+        setError('Failed to load data from database');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
   // Show success message temporarily
@@ -50,28 +80,48 @@ export default function Home() {
   }, [showSuccessMessage]);
 
   // Raw Materials Management
-  const handleSaveMaterial = (material: RawMaterial) => {
-    let updatedMaterials;
-    
-    if (editingMaterial) {
-      updatedMaterials = materials.map(m => m.id === material.id ? material : m);
-      setEditingMaterial(undefined);
-      setShowSuccessMessage(`✨ "${material.name}" updated successfully!`);
-    } else {
-      updatedMaterials = [...materials, material];
-      setShowSuccessMessage(`🎉 "${material.name}" added to your collection!`);
+  const handleSaveMaterial = async (material: RawMaterial) => {
+    setLoading(true);
+    setError(''); // Clear any previous errors
+    try {
+      console.log('Attempting to save material:', material.name);
+      const savedMaterial = await saveRawMaterialToDB(material);
+      let updatedMaterials;
+      
+      if (editingMaterial) {
+        updatedMaterials = materials.map(m => m.id === material.id ? savedMaterial : m);
+        setEditingMaterial(undefined);
+        setShowSuccessMessage(`✨ "${material.name}" updated successfully!`);
+      } else {
+        updatedMaterials = [...materials, savedMaterial];
+        setShowSuccessMessage(`🎉 "${material.name}" added to your collection!`);
+      }
+      setMaterials(updatedMaterials);
+      setShowMaterialForm(false);
+    } catch (err) {
+      console.error('Error saving material:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to save material';
+      setError(`Failed to save material: ${errorMessage}`);
+      // Don't close the form on error so user can try again
+    } finally {
+      setLoading(false);
     }
-    setMaterials(updatedMaterials);
-    saveRawMaterials(updatedMaterials);
-    setShowMaterialForm(false);
   };
 
-  const handleDeleteMaterial = (id: string) => {
-    const materialName = materials.find(m => m.id === id)?.name;
-    const updatedMaterials = materials.filter(m => m.id !== id);
-    setMaterials(updatedMaterials);
-    saveRawMaterials(updatedMaterials);
-    setShowSuccessMessage(`🗑️ "${materialName}" removed from your collection`);
+  const handleDeleteMaterial = async (id: string) => {
+    setLoading(true);
+    try {
+      const materialName = materials.find(m => m.id === id)?.name;
+      await deleteRawMaterialFromDB(id);
+      const updatedMaterials = materials.filter(m => m.id !== id);
+      setMaterials(updatedMaterials);
+      setShowSuccessMessage(`🗑️ "${materialName}" removed from your collection`);
+    } catch (err) {
+      console.error('Error deleting material:', err);
+      setError('Failed to delete material');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEditMaterial = (material: RawMaterial) => {
@@ -85,28 +135,44 @@ export default function Home() {
   };
 
   // Recipes Management
-  const handleSaveRecipe = (recipe: Recipe) => {
-    let updatedRecipes;
-    
-    if (editingRecipe) {
-      updatedRecipes = recipes.map(r => r.id === recipe.id ? recipe : r);
-      setEditingRecipe(undefined);
-      setShowSuccessMessage(`✨ Recipe "${recipe.name}" updated successfully!`);
-    } else {
-      updatedRecipes = [...recipes, recipe];
-      setShowSuccessMessage(`🧪 Recipe "${recipe.name}" created successfully!`);
+  const handleSaveRecipe = async (recipe: Recipe) => {
+    setLoading(true);
+    try {
+      const savedRecipe = await saveRecipeToDB(recipe);
+      let updatedRecipes;
+      
+      if (editingRecipe) {
+        updatedRecipes = recipes.map(r => r.id === recipe.id ? savedRecipe : r);
+        setEditingRecipe(undefined);
+        setShowSuccessMessage(`✨ Recipe "${recipe.name}" updated successfully!`);
+      } else {
+        updatedRecipes = [...recipes, savedRecipe];
+        setShowSuccessMessage(`🧪 Recipe "${recipe.name}" created successfully!`);
+      }
+      setRecipes(updatedRecipes);
+      setShowRecipeForm(false);
+    } catch (err) {
+      console.error('Error saving recipe:', err);
+      setError('Failed to save recipe');
+    } finally {
+      setLoading(false);
     }
-    setRecipes(updatedRecipes);
-    saveRecipes(updatedRecipes);
-    setShowRecipeForm(false);
   };
 
-  const handleDeleteRecipe = (id: string) => {
-    const recipeName = recipes.find(r => r.id === id)?.name;
-    const updatedRecipes = recipes.filter(r => r.id !== id);
-    setRecipes(updatedRecipes);
-    saveRecipes(updatedRecipes);
-    setShowSuccessMessage(`🗑️ Recipe "${recipeName}" deleted`);
+  const handleDeleteRecipe = async (id: string) => {
+    setLoading(true);
+    try {
+      const recipeName = recipes.find(r => r.id === id)?.name;
+      await deleteRecipeFromDB(id);
+      const updatedRecipes = recipes.filter(r => r.id !== id);
+      setRecipes(updatedRecipes);
+      setShowSuccessMessage(`🗑️ Recipe "${recipeName}" deleted`);
+    } catch (err) {
+      console.error('Error deleting recipe:', err);
+      setError('Failed to delete recipe');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEditRecipe = (recipe: Recipe) => {
@@ -124,13 +190,19 @@ export default function Home() {
     setShowSuccessMessage(`📊 Recipe "${recipe.name}" exported successfully!`);
   };
 
-  const handleUpdateRecipe = (updatedRecipe: Recipe) => {
-    setRecipes(recipes.map(recipe => 
-      recipe.id === updatedRecipe.id ? updatedRecipe : recipe
-    ));
-    saveRecipes(recipes.map(recipe => 
-      recipe.id === updatedRecipe.id ? updatedRecipe : recipe
-    ));
+  const handleUpdateRecipe = async (updatedRecipe: Recipe) => {
+    setLoading(true);
+    try {
+      const savedRecipe = await saveRecipeToDB(updatedRecipe);
+      setRecipes(recipes.map(recipe => 
+        recipe.id === updatedRecipe.id ? savedRecipe : recipe
+      ));
+    } catch (err) {
+      console.error('Error updating recipe:', err);
+      setError('Failed to update recipe');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Calculate statistics
@@ -171,10 +243,40 @@ export default function Home() {
     { id: 'packaging', label: 'Packaging', icon: Palette, color: 'from-blue-400 to-indigo-400', bg: 'from-blue-50 to-indigo-50', text: 'text-blue-600' },
     { id: 'labels', label: 'Labels', icon: Tag, color: 'from-green-400 to-emerald-400', bg: 'from-green-50 to-emerald-50', text: 'text-green-600' },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, color: 'from-orange-400 to-red-400', bg: 'from-orange-50 to-red-50', text: 'text-orange-600' },
+    { id: 'history', label: 'History', icon: History, color: 'from-teal-400 to-cyan-400', bg: 'from-teal-50 to-cyan-50', text: 'text-teal-600' },
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-purple-50 to-pink-50 relative overflow-hidden">
+      {/* Error Message */}
+      <AnimatePresence>
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -50, scale: 0.95 }}
+            className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-xl shadow-2xl"
+          >
+            {error}
+            <button
+              onClick={() => setError('')}
+              className="ml-2 font-bold"
+            >
+              ×
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Loading Overlay */}
+      {loading && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-4 rounded-lg shadow-lg">
+            Loading...
+          </div>
+        </div>
+      )}
+
       {/* Success Message */}
       <AnimatePresence>
         {showSuccessMessage && (
@@ -695,12 +797,13 @@ export default function Home() {
               animate="visible"
               exit="hidden"
               className="space-y-6"
+              onAnimationStart={() => console.log('Rendering Recipes Section, recipes:', recipes)}
             >
               <motion.div variants={itemVariants}>
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
-                      🧪 Recipe Collection
+                      🧪 Recipe Collection ({recipes.length})
                     </h2>
                     <p className="text-gray-600 flex items-center gap-1">
                       Create and manage your magical formulations <Heart className="w-4 h-4 text-purple-500" />
@@ -722,6 +825,7 @@ export default function Home() {
               <motion.div variants={itemVariants}>
                 <Card className="bg-white/95 backdrop-blur-sm border-purple-200/60 shadow-xl">
                   <CardContent className="p-6">
+                    <div onLoad={() => console.log('Recipe display logic - materials:', materials.length, 'recipes:', recipes.length)}>
                     {materials.length === 0 ? (
                       <div className="text-center py-12">
                         <motion.div
@@ -779,6 +883,7 @@ export default function Home() {
                         onUpdateRecipe={handleUpdateRecipe}
                       />
                     )}
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>
@@ -1036,6 +1141,98 @@ export default function Home() {
               )}
             </motion.div>
           )}
+
+          {/* History Section */}
+          {activeSection === 'history' && (
+            <motion.div
+              key="history"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              className="space-y-6"
+            >
+              <motion.div variants={itemVariants}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
+                      📜 Change History
+                    </h2>
+                    <p className="text-gray-600 flex items-center gap-1">
+                      Track all changes to your recipes and materials <History className="w-4 h-4 text-teal-500" />
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div variants={itemVariants}>
+                <Card className="bg-white/95 backdrop-blur-sm border-teal-200/60 shadow-xl">
+                  <CardContent className="p-6">
+                    <div className="space-y-6">
+                      {/* Recipe Changes */}
+                      <div>
+                        <h3 className="text-lg font-semibold text-teal-700 mb-4">Recipe History</h3>
+                        <div className="space-y-4">
+                          {recipes.map((recipe) => (
+                            <div key={recipe.id} className="border-l-4 border-teal-400 pl-4 py-2">
+                              <div className="flex items-center gap-2">
+                                <ChefHat className="w-4 h-4 text-teal-500" />
+                                <span className="font-medium text-gray-700">{recipe.name}</span>
+                              </div>
+                              <div className="text-sm text-gray-500 mt-1">
+                                Created: {new Date(recipe.created_at).toLocaleDateString()}
+                              </div>
+                              {recipe.updated_at !== recipe.created_at && (
+                                <div className="text-sm text-gray-500">
+                                  Last updated: {new Date(recipe.updated_at).toLocaleDateString()}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Material Changes */}
+                      <div>
+                        <h3 className="text-lg font-semibold text-teal-700 mb-4">Material History</h3>
+                        <div className="space-y-4">
+                          {materials.map((material) => (
+                            <div key={material.id} className="border-l-4 border-teal-400 pl-4 py-2">
+                              <div className="flex items-center gap-2">
+                                <Package className="w-4 h-4 text-teal-500" />
+                                <span className="font-medium text-gray-700">{material.name}</span>
+                              </div>
+                              <div className="text-sm text-gray-500 mt-1">
+                                Created: {new Date(material.created_at).toLocaleDateString()}
+                              </div>
+                              {material.updated_at !== material.created_at && (
+                                <div className="text-sm text-gray-500">
+                                  Last updated: {new Date(material.updated_at).toLocaleDateString()}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {recipes.length === 0 && materials.length === 0 && (
+                        <div className="text-center py-12">
+                          <motion.div
+                            animate={{ rotate: [0, 360] }}
+                            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                          >
+                            <History className="w-16 h-16 text-teal-300 mx-auto mb-4" />
+                          </motion.div>
+                          <h3 className="text-xl font-semibold text-gray-600 mb-2">No history yet</h3>
+                          <p className="text-gray-500">Start by adding materials and creating recipes!</p>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </main>
 
@@ -1047,6 +1244,12 @@ export default function Home() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={(e) => {
+              // Close modal when clicking backdrop
+              if (e.target === e.currentTarget) {
+                handleCancelEditMaterial();
+              }
+            }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
@@ -1055,9 +1258,24 @@ export default function Home() {
               className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
             >
               <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-pink-50 to-rose-50">
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
-                  {editingMaterial ? '✨ Edit Material' : '✨ Add New Material'}
-                </h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
+                    {editingMaterial ? '✨ Edit Material' : '✨ Add New Material'}
+                  </h2>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleCancelEditMaterial}
+                    className="text-gray-500 hover:text-gray-700 hover:bg-pink-100 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold"
+                  >
+                    <motion.div
+                      whileHover={{ rotate: 90 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    >
+                      ✕
+                    </motion.div>
+                  </Button>
+                </div>
               </div>
               <div className="p-6">
                 <RawMaterialForm
