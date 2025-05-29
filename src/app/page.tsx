@@ -293,7 +293,6 @@ export default function Home() {
     { id: 'materials', label: 'Materials', icon: Package, color: 'from-pink-400 to-rose-400', bg: 'from-pink-50 to-rose-50', text: 'text-pink-600' },
     { id: 'recipes', label: 'Recipes', icon: ChefHat, color: 'from-purple-400 to-violet-400', bg: 'from-purple-50 to-violet-50', text: 'text-purple-600' },
     { id: 'labels', label: 'Labels', icon: Tag, color: 'from-green-400 to-emerald-400', bg: 'from-green-50 to-emerald-50', text: 'text-green-600' },
-    { id: 'analytics', label: 'Analytics', icon: TrendingUp, color: 'from-orange-400 to-red-400', bg: 'from-orange-50 to-red-50', text: 'text-orange-600' },
     { id: 'inventory', label: 'Inventory', icon: Package, color: 'from-blue-400 to-indigo-400', bg: 'from-blue-50 to-indigo-50', text: 'text-blue-600' },
     { id: 'pricing', label: 'Pricing', icon: Calculator, color: 'from-purple-400 to-violet-400', bg: 'from-purple-50 to-violet-50', text: 'text-purple-600' }
   ];
@@ -945,6 +944,7 @@ export default function Home() {
                         onDelete={handleDeleteRecipe}
                         onExport={handleExportRecipe}
                         onUpdateRecipe={handleUpdateRecipe}
+                        showHeader={false}
                       />
                     )}
                     </div>
@@ -1068,125 +1068,6 @@ export default function Home() {
                   </CardContent>
                 </Card>
               </motion.div>
-            </motion.div>
-          )}
-
-          {/* Analytics Section */}
-          {activeSection === 'analytics' && (
-            <motion.div
-              key="analytics"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              exit="hidden"
-              className="space-y-6"
-            >
-              <motion.div variants={itemVariants}>
-                <div>
-                  <h2 className="text-3xl font-bold bg-gradient-to-r from-orchid-600 to-plum-600 bg-clip-text text-transparent">
-                    📊 Analytics & Insights
-                  </h2>
-                  <p className="text-gray-600 flex items-center gap-1">
-                    Analyze your formulation costs and efficiency <TrendingUp className="w-4 h-4 text-orchid-500" />
-                  </p>
-                </div>
-              </motion.div>
-
-              <motion.div variants={itemVariants}>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <motion.div whileHover={{ scale: 1.05, y: -5 }} transition={{ type: "spring", stiffness: 300 }}>
-                    <Card className="bg-white/95 backdrop-blur-sm border-purple-200/60 shadow-xl">
-                      <CardHeader>
-                        <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                          <motion.div
-                            animate={{ rotate: [0, 360] }}
-                            transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                          >
-                            <Target className="w-4 h-4 text-purple-500" />
-                          </motion.div>
-                          Average Cost per Gram
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
-                          {formatCurrency(avgCostPerGram, currency)}
-                        </div>
-                        <p className="text-xs text-gray-500">Across all materials ✨</p>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-
-                  <motion.div whileHover={{ scale: 1.05, y: -5 }} transition={{ type: "spring", stiffness: 300 }}>
-                    <Card className="bg-white/95 backdrop-blur-sm border-pink-200/60 shadow-xl">
-                      <CardHeader>
-                        <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                          <motion.div
-                            animate={{ scale: [1, 1.2, 1] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                          >
-                            <Package className="w-4 h-4 text-pink-500" />
-                          </motion.div>
-                          Total Weight
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
-                          {totalWeight.toFixed(0)}g
-                        </div>
-                        <p className="text-xs text-gray-500">Total material inventory 💕</p>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-
-                  <motion.div whileHover={{ scale: 1.05, y: -5 }} transition={{ type: "spring", stiffness: 300 }}>
-                    <Card className="bg-white/95 backdrop-blur-sm border-yellow-200/60 shadow-xl">
-                      <CardHeader>
-                        <CardTitle className="text-sm font-medium text-gray-600 flex items-center gap-2">
-                          <motion.div
-                            animate={{ y: [0, -3, 0] }}
-                            transition={{ duration: 2, repeat: Infinity }}
-                          >
-                            <TrendingUp className="w-4 h-4 text-yellow-500" />
-                          </motion.div>
-                          Recipe Value
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold bg-gradient-to-r from-yellow-600 to-amber-600 bg-clip-text text-transparent">
-                          {formatCurrency(totalRecipeCosts, currency)}
-                        </div>
-                        <p className="text-xs text-gray-500">Total recipe costs 🧪</p>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </div>
-              </motion.div>
-
-              {(materials.length === 0 && recipes.length === 0) && (
-                <motion.div variants={itemVariants}>
-                  <Card className="bg-gradient-to-r from-purple-50/90 via-pink-50/90 to-yellow-50/90 backdrop-blur-sm border-purple-200/60 shadow-xl">
-                    <CardContent className="p-8 text-center">
-                      <motion.div
-                        animate={{ y: [0, -5, 0] }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                      >
-                        <BarChart3 className="w-16 h-16 text-purple-400 mx-auto mb-4" />
-                      </motion.div>
-                      <h3 className="text-xl font-semibold text-gray-600 mb-2">No data to analyze yet 📊</h3>
-                      <p className="text-gray-500 mb-6">Add materials and create recipes to see beautiful analytics</p>
-                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                        <Button
-                          onClick={() => setActiveSection('materials')}
-                          className="bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-500 hover:from-purple-600 hover:via-pink-600 hover:to-yellow-600 text-white"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Get Started ✨
-                        </Button>
-                      </motion.div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              )}
             </motion.div>
           )}
 

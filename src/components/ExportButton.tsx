@@ -15,6 +15,8 @@ interface ExportButtonProps {
   materials?: RawMaterial[];
   className?: string;
   variant?: 'recipe' | 'recipes' | 'materials' | 'all';
+  label?: string;
+  iconPosition?: 'left' | 'right';
 }
 
 export default function ExportButton({ 
@@ -22,7 +24,9 @@ export default function ExportButton({
   recipes, 
   materials, 
   className = '', 
-  variant = 'recipe' 
+  variant = 'recipe',
+  label,
+  iconPosition = 'left',
 }: ExportButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
@@ -177,24 +181,12 @@ export default function ExportButton({
       >
         <Button
           onClick={handleExportAllExcel}
-          className="h-12 px-6 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+          className={className}
           size="lg"
         >
-          <motion.div
-            className="flex items-center gap-2"
-            animate={{ 
-              y: [0, -2, 0],
-            }}
-            transition={{ 
-              duration: 2, 
-              repeat: Infinity, 
-              ease: "easeInOut" 
-            }}
-          >
-            <Download className="w-5 h-5" />
-            <span>Export All Recipes</span>
-            <Sparkles className="w-4 h-4 animate-pulse" />
-          </motion.div>
+          {iconPosition === 'left' && <Download className="w-5 h-5 mr-2" />}
+          {label || 'Export All Recipes'}
+          {iconPosition === 'right' && <Download className="w-5 h-5 ml-2" />}
         </Button>
       </motion.div>
     );
