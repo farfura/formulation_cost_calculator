@@ -20,6 +20,9 @@ export interface RawMaterial {
   totalWeight: number;
   weightUnit: WeightUnit;
   costPerGram: number;
+  created_at: string;
+  updated_at: string;
+  // user_id?: string; // To be added later for user-specific data
 }
 
 export interface PackagingItem {
@@ -29,6 +32,8 @@ export interface PackagingItem {
   description?: string;
   supplier?: string;
   category: 'container' | 'label' | 'cap' | 'pump' | 'box' | 'other';
+  created_at: string;
+  updated_at: string;
 }
 
 export interface RecipeIngredient {
@@ -54,6 +59,8 @@ export interface Recipe {
   category?: string;
   description?: string;
   instructions?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface ScaledRecipe extends Recipe {

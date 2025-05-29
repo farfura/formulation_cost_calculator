@@ -24,8 +24,10 @@ interface RecipeListProps {
 
 export default function RecipeList({ recipes, materials, onEdit, onDelete, onExport, onUpdateRecipe }: RecipeListProps) {
   const { currency } = useCurrency();
+  console.log('RecipeList component - received recipes:', recipes);
 
-  if (recipes.length === 0) {
+  if (!recipes || recipes.length === 0) {
+    console.log('RecipeList - No recipes to display');
     return (
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -74,6 +76,9 @@ export default function RecipeList({ recipes, materials, onEdit, onDelete, onExp
       </motion.div>
     );
   }
+
+  console.log('RecipeList - Rendering recipes list:', recipes.length, 'recipes');
+  console.log('Recipe details:', recipes.map(r => ({ id: r.id, name: r.name, ingredients: r.ingredients?.length || 0 })));
 
   const containerVariants = {
     hidden: { opacity: 0 },
