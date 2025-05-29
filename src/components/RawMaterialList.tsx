@@ -19,6 +19,10 @@ interface RawMaterialListProps {
 export default function RawMaterialList({ materials, onEdit, onDelete }: RawMaterialListProps) {
   const { currency } = useCurrency();
 
+  const totalMaterials = materials.length;
+  const totalValue = materials.reduce((sum, m) => sum + (m.totalCost || 0), 0);
+  const avgCostPerGram = totalMaterials > 0 ? materials.reduce((sum, m) => sum + (m.costPerGram || 0), 0) / totalMaterials : 0;
+
   if (materials.length === 0) {
     return (
       <motion.div
@@ -84,141 +88,69 @@ export default function RawMaterialList({ materials, onEdit, onDelete }: RawMate
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className="bg-white/90 backdrop-blur-sm border-pink-200/50 shadow-xl">
-        <CardHeader className="bg-gradient-to-r from-pink-500/10 to-yellow-500/10 border-b border-pink-200/30">
-          <CardTitle className="flex items-center gap-3">
-            <motion.div
-              whileHover={{ scale: 1.1, rotate: 5 }}
-              transition={{ type: "spring", stiffness: 400, damping: 17 }}
-              className="p-2 rounded-full bg-gradient-to-r from-pink-500 to-yellow-500 text-white"
-            >
-              <Package className="w-5 h-5" />
-            </motion.div>
-            <div>
-              <h3 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-yellow-600 bg-clip-text text-transparent">
-                💖 Your Beautiful Ingredient Collection
-              </h3>
-              <div className="flex items-center gap-2">
-                <p className="text-sm text-muted-foreground font-normal">
-                  Your magical beauty laboratory
-                </p>
-                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
-                  {materials.length} {materials.length === 1 ? 'ingredient' : 'ingredients'} ✨
-                </Badge>
-              </div>
-            </div>
-          </CardTitle>
-        </CardHeader>
+      {/* Pastel Summary Card */}
+      <Card className="mb-6 bg-gradient-to-r from-pink-50 to-yellow-50 border-0 shadow-none">
+        <CardContent className="py-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div className="flex flex-col gap-1">
+            <span className="text-lg font-bold text-pink-600">Inventory Summary</span>
+            <span className="text-sm text-gray-500">Updated: {new Date().toLocaleString()}</span>
+          </div>
+          <div className="flex flex-wrap gap-4">
+            <div className="rounded-lg bg-pink-100 px-4 py-2 text-pink-700 font-semibold text-sm shadow-sm">Total Materials: {totalMaterials}</div>
+            <div className="rounded-lg bg-yellow-100 px-4 py-2 text-yellow-700 font-semibold text-sm shadow-sm">Total Value: {formatCurrency(totalValue, currency)}</div>
+            <div className="rounded-lg bg-purple-100 px-4 py-2 text-purple-700 font-semibold text-sm shadow-sm">Avg Cost/Gram: {formatCurrency(avgCostPerGram, currency)}</div>
+          </div>
+        </CardContent>
+      </Card>
 
-        <CardContent className="p-6">
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            className="space-y-4"
-          >
-            <AnimatePresence>
-              {materials.map((material, index) => (
-                <motion.div
-                  key={material.id}
-                  variants={itemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit={{ opacity: 0, x: -100, transition: { duration: 0.3 } }}
-                  layout
-                  className="group"
-                >
-                  <Card className="border-pink-200/50 hover:border-pink-300/50 transition-all duration-300 hover:shadow-lg bg-gradient-to-r from-white to-pink-50/30 hover:to-pink-50/50">
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-4">
-                            <motion.div
-                              className="w-3 h-3 rounded-full bg-gradient-to-r from-pink-500 to-yellow-500"
-                              animate={{ scale: [1, 1.2, 1] }}
-                              transition={{ duration: 2, repeat: Infinity, delay: index * 0.2 }}
-                            />
-                            <h4 className="text-xl font-bold text-primary">{material.name}</h4>
-                            <motion.div
-                              animate={{ rotate: 360 }}
-                              transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                            >
-                              <Sparkles className="w-4 h-4 text-yellow-500" />
-                            </motion.div>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <motion.div
-                              whileHover={{ scale: 1.02 }}
-                              className="flex items-center gap-2 text-sm text-muted-foreground p-3 rounded-lg bg-green-50/50 border border-green-200/50"
-                            >
-                              <DollarSign className="w-4 h-4 text-green-500" />
-                              <span>Total Cost:</span>
-                              <span className="font-semibold text-primary">
-                                {formatCurrency(material.totalCost, currency)}
-                              </span>
-                            </motion.div>
-                            
-                            <motion.div
-                              whileHover={{ scale: 1.02 }}
-                              className="flex items-center gap-2 text-sm text-muted-foreground p-3 rounded-lg bg-blue-50/50 border border-blue-200/50"
-                            >
-                              <Scale className="w-4 h-4 text-blue-500" />
-                              <span>Weight:</span>
-                              <span className="font-semibold text-primary">
-                                {formatWeight(material.totalWeight, material.weightUnit)}
-                              </span>
-                            </motion.div>
-                            
-                            <motion.div
-                              whileHover={{ scale: 1.02 }}
-                              className="flex items-center gap-2 text-sm text-muted-foreground p-3 rounded-lg bg-purple-50/50 border border-purple-200/50"
-                            >
-                              <Calculator className="w-4 h-4 text-purple-500" />
-                              <span>Cost/gram:</span>
-                              <Badge variant="secondary" className="bg-gradient-to-r from-pink-100 to-yellow-100 text-primary border-pink-200">
-                                {formatCurrency(material.costPerGram, currency)}/g ✨
-                              </Badge>
-                            </motion.div>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-2 ml-6">
-                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                            <Button
-                              onClick={() => onEdit(material)}
-                              variant="outline"
-                              size="sm"
-                              className="h-10 w-20 border-pink-200 hover:border-pink-300 hover:bg-pink-50 text-pink-600 font-medium"
-                            >
-                              <Edit2 className="w-4 h-4 mr-1" />
-                              Edit
-                            </Button>
-                          </motion.div>
-                          
-                          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}>
-                            <Button
-                              onClick={() => {
-                                if (confirm(`Are you sure you want to delete "${material.name}"? 💔`)) {
-                                  onDelete(material.id);
-                                }
-                              }}
-                              variant="outline"
-                              size="sm"
-                              className="h-10 w-20 border-red-200 hover:border-red-300 hover:bg-red-50 text-red-600 font-medium"
-                            >
-                              <Trash2 className="w-4 h-4 mr-1" />
-                              Delete
-                            </Button>
-                          </motion.div>
-                        </div>
+      {/* Pastel Table (Inventory style) */}
+      <Card className="bg-white/95 backdrop-blur-sm border-pink-200/60 shadow-xl mb-8">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="min-w-full rounded-xl overflow-hidden">
+              <thead>
+                <tr className="bg-gradient-to-r from-pink-200 to-yellow-200">
+                  <th className="px-4 py-3 text-left font-bold text-pink-700 text-base">Material Name</th>
+                  <th className="px-4 py-3 text-left font-bold text-pink-700 text-base">Weight</th>
+                  <th className="px-4 py-3 text-left font-bold text-pink-700 text-base">Unit</th>
+                  <th className="px-4 py-3 text-left font-bold text-pink-700 text-base">Cost/Gram</th>
+                  <th className="px-4 py-3 text-left font-bold text-pink-700 text-base">Total Cost</th>
+                  <th className="px-4 py-3 text-left font-bold text-pink-700 text-base">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {materials.map((m, i) => (
+                  <tr key={m.id} className={i % 2 === 0 ? 'bg-white' : 'bg-pink-50'}>
+                    <td className="px-4 py-2 font-medium text-pink-900">{m.name}</td>
+                    <td className="px-4 py-2 text-pink-800">{formatWeight(m.totalWeight, m.weightUnit)}</td>
+                    <td className="px-4 py-2 text-pink-800">{m.weightUnit}</td>
+                    <td className="px-4 py-2 text-pink-800">{formatCurrency(m.costPerGram, currency)}</td>
+                    <td className="px-4 py-2 text-pink-800">{formatCurrency(m.totalCost, currency)}</td>
+                    <td className="px-4 py-2">
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => onEdit(m)}
+                          className="border-pink-300 text-pink-600 hover:bg-pink-50"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => onDelete(m.id)}
+                          className="bg-pink-200 text-pink-900 hover:bg-pink-400 border-none"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
     </motion.div>

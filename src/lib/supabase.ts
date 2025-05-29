@@ -1,14 +1,24 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://wpogjjrlhevjcnejycjy.supabase.co';
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('Missing Supabase environment variables');
+}
 
 console.log('Initializing Supabase client with:', { 
   url: supabaseUrl,
-  hasKey: !!supabaseKey 
+  hasKey: !!supabaseAnonKey 
 });
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+});
 
 export type Recipe = {
   id: string;
@@ -22,11 +32,4 @@ export type Recipe = {
   total_cost: number;
   created_at: string;
   updated_at: string;
-};
-
-export type History = {
-  id: string;
-  recipe_id: string;
-  changes: any;
-  created_at: string;
 }; 

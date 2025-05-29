@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import { RawMaterial, Recipe, PackagingItem } from '@/types';
 import { 
   getRawMaterialsFromDB, 
@@ -16,6 +17,8 @@ import {
 } from '@/utils/db';
 import { exportToExcel } from '@/utils/export';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/utils/currency';
 
 import RawMaterialForm from '@/components/RawMaterialForm';
@@ -29,10 +32,16 @@ import LabelGenerator from '@/components/LabelGenerator';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calculator, Package, ChefHat, Info, ArrowRight, CheckCircle, Sparkles, Heart, Star, HelpCircle, Target, Lightbulb, Plus, TrendingUp, Beaker, Palette, Download, BarChart3, Layers, Zap, Tag, History } from 'lucide-react';
+import { Calculator, Package, ChefHat, Info, ArrowRight, CheckCircle, Sparkles, Heart, Star, HelpCircle, Target, Lightbulb, Plus, TrendingUp, Beaker, Palette, Download, BarChart3, Layers, Zap, Tag, LogOut } from 'lucide-react';
+import { RecipeVersioning } from '@/components/RecipeVersioning';
+import { InventoryManager } from '@/components/InventoryManager';
+import { PricingCalculator } from '@/components/PricingCalculator';
 
 export default function Home() {
   const { currency } = useCurrency();
+  const { user, signOut } = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [packaging, setPackaging] = useState<PackagingItem[]>([]);
@@ -40,11 +49,54 @@ export default function Home() {
   const [editingRecipe, setEditingRecipe] = useState<Recipe | undefined>();
   const [showMaterialForm, setShowMaterialForm] = useState(false);
   const [showRecipeForm, setShowRecipeForm] = useState(false);
-  const [activeSection, setActiveSection] = useState<'overview' | 'materials' | 'recipes' | 'packaging' | 'labels' | 'analytics' | 'history'>('overview');
+  const [activeSection, setActiveSection] = useState<'overview' | 'materials' | 'recipes' | 'labels' | 'analytics' | 'inventory' | 'pricing'>('overview');
   const [showSuccessMessage, setShowSuccessMessage] = useState<string>('');
   const [selectedRecipeForLabel, setSelectedRecipeForLabel] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
+
+  // Remove unused functions and state
+  const loadRecipeData = async (recipeId: string) => {
+    try {
+      const recipe = recipes.find(r => r.id === recipeId);
+      if (recipe) {
+        // Update recipe data as needed
+        const updatedRecipes = recipes.map(r => r.id === recipe.id ? recipe : r);
+        setRecipes(updatedRecipes);
+      }
+    } catch (error) {
+      console.error('Error loading recipe data:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to load recipe data",
+      });
+    }
+  };
+
+  // Check authentication
+  useEffect(() => {
+    if (!user) {
+      router.push('/login');
+    }
+  }, [user, router]);
+
+  // Handle sign out
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "👋 See you soon!",
+        description: "You've been successfully logged out.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to sign out. Please try again.",
+      });
+    }
+  };
 
   // Load data from database on component mount
   useEffect(() => {
@@ -240,10 +292,10 @@ export default function Home() {
     { id: 'overview', label: 'Overview', icon: BarChart3, color: 'from-yellow-400 to-amber-400', bg: 'from-yellow-50 to-amber-50', text: 'text-yellow-600' },
     { id: 'materials', label: 'Materials', icon: Package, color: 'from-pink-400 to-rose-400', bg: 'from-pink-50 to-rose-50', text: 'text-pink-600' },
     { id: 'recipes', label: 'Recipes', icon: ChefHat, color: 'from-purple-400 to-violet-400', bg: 'from-purple-50 to-violet-50', text: 'text-purple-600' },
-    { id: 'packaging', label: 'Packaging', icon: Palette, color: 'from-blue-400 to-indigo-400', bg: 'from-blue-50 to-indigo-50', text: 'text-blue-600' },
     { id: 'labels', label: 'Labels', icon: Tag, color: 'from-green-400 to-emerald-400', bg: 'from-green-50 to-emerald-50', text: 'text-green-600' },
     { id: 'analytics', label: 'Analytics', icon: TrendingUp, color: 'from-orange-400 to-red-400', bg: 'from-orange-50 to-red-50', text: 'text-orange-600' },
-    { id: 'history', label: 'History', icon: History, color: 'from-teal-400 to-cyan-400', bg: 'from-teal-50 to-cyan-50', text: 'text-teal-600' },
+    { id: 'inventory', label: 'Inventory', icon: Package, color: 'from-blue-400 to-indigo-400', bg: 'from-blue-50 to-indigo-50', text: 'text-blue-600' },
+    { id: 'pricing', label: 'Pricing', icon: Calculator, color: 'from-purple-400 to-violet-400', bg: 'from-purple-50 to-violet-50', text: 'text-purple-600' }
   ];
 
   return (
@@ -372,7 +424,7 @@ export default function Home() {
         />
       </div>
 
-      {/* Header */}
+      {/* Header with Sign Out */}
       <motion.header
         initial={{ opacity: 0, y: -50 }}
         animate={{ opacity: 1, y: 0 }}
@@ -401,7 +453,7 @@ export default function Home() {
                   ✨ Beauty Formula Calculator
                 </h1>
                 <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  Create magical formulations <Heart className="w-3 h-3 text-orchid-500" /> with precision and cost control
+                  Welcome, {user?.email} <Heart className="w-3 h-3 text-orchid-500" />
                 </p>
               </div>
             </motion.div>
@@ -429,6 +481,18 @@ export default function Home() {
                 >
                   <HelpCircle className="w-4 h-4 mr-1" />
                   Help
+                </Button>
+              </motion.div>
+
+              <motion.div whileHover={{ scale: 1.05 }}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleSignOut}
+                  className="text-gray-600 hover:text-gray-900 flex items-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign Out
                 </Button>
               </motion.div>
             </motion.div>
@@ -890,22 +954,6 @@ export default function Home() {
             </motion.div>
           )}
 
-          {/* Packaging Section */}
-          {activeSection === 'packaging' && (
-            <motion.div
-              key="packaging"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              exit="hidden"
-              className="space-y-6"
-            >
-              <motion.div variants={itemVariants}>
-                <PackagingManager />
-              </motion.div>
-            </motion.div>
-          )}
-
           {/* Labels Section */}
           {activeSection === 'labels' && (
             <motion.div
@@ -1142,10 +1190,28 @@ export default function Home() {
             </motion.div>
           )}
 
-          {/* History Section */}
-          {activeSection === 'history' && (
+          {/* Inventory Section */}
+          {activeSection === 'inventory' && (
             <motion.div
-              key="history"
+              key="inventory"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              exit="hidden"
+              className="space-y-6"
+            >
+              <motion.div variants={itemVariants}>
+                <div className="mt-4">
+                  <InventoryManager />
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
+          {/* Pricing Section */}
+          {activeSection === 'pricing' && (
+            <motion.div
+              key="pricing"
               variants={containerVariants}
               initial="hidden"
               animate="visible"
@@ -1155,81 +1221,18 @@ export default function Home() {
               <motion.div variants={itemVariants}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-cyan-600 bg-clip-text text-transparent">
-                      📜 Change History
+                    <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                      💰 Product Pricing
                     </h2>
                     <p className="text-gray-600 flex items-center gap-1">
-                      Track all changes to your recipes and materials <History className="w-4 h-4 text-teal-500" />
+                      Calculate your product costs and profit margins
                     </p>
                   </div>
                 </div>
               </motion.div>
 
               <motion.div variants={itemVariants}>
-                <Card className="bg-white/95 backdrop-blur-sm border-teal-200/60 shadow-xl">
-                  <CardContent className="p-6">
-                    <div className="space-y-6">
-                      {/* Recipe Changes */}
-                      <div>
-                        <h3 className="text-lg font-semibold text-teal-700 mb-4">Recipe History</h3>
-                        <div className="space-y-4">
-                          {recipes.map((recipe) => (
-                            <div key={recipe.id} className="border-l-4 border-teal-400 pl-4 py-2">
-                              <div className="flex items-center gap-2">
-                                <ChefHat className="w-4 h-4 text-teal-500" />
-                                <span className="font-medium text-gray-700">{recipe.name}</span>
-                              </div>
-                              <div className="text-sm text-gray-500 mt-1">
-                                Created: {new Date(recipe.created_at).toLocaleDateString()}
-                              </div>
-                              {recipe.updated_at !== recipe.created_at && (
-                                <div className="text-sm text-gray-500">
-                                  Last updated: {new Date(recipe.updated_at).toLocaleDateString()}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Material Changes */}
-                      <div>
-                        <h3 className="text-lg font-semibold text-teal-700 mb-4">Material History</h3>
-                        <div className="space-y-4">
-                          {materials.map((material) => (
-                            <div key={material.id} className="border-l-4 border-teal-400 pl-4 py-2">
-                              <div className="flex items-center gap-2">
-                                <Package className="w-4 h-4 text-teal-500" />
-                                <span className="font-medium text-gray-700">{material.name}</span>
-                              </div>
-                              <div className="text-sm text-gray-500 mt-1">
-                                Created: {new Date(material.created_at).toLocaleDateString()}
-                              </div>
-                              {material.updated_at !== material.created_at && (
-                                <div className="text-sm text-gray-500">
-                                  Last updated: {new Date(material.updated_at).toLocaleDateString()}
-                                </div>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {recipes.length === 0 && materials.length === 0 && (
-                        <div className="text-center py-12">
-                          <motion.div
-                            animate={{ rotate: [0, 360] }}
-                            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                          >
-                            <History className="w-16 h-16 text-teal-300 mx-auto mb-4" />
-                          </motion.div>
-                          <h3 className="text-xl font-semibold text-gray-600 mb-2">No history yet</h3>
-                          <p className="text-gray-500">Start by adding materials and creating recipes!</p>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <PricingCalculator />
               </motion.div>
             </motion.div>
           )}
