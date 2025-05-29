@@ -172,28 +172,30 @@ export async function saveRecipeToDB(recipe: Recipe) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
 
-  // Transform the data to match the database schema
+  // Only include id if it is a valid UUID
+  const hasValidId = recipe.id && validateUUID(recipe.id);
+
+  // Sanitize payload: ensure no undefined, always arrays for JSONB fields
   const dbRecipe = {
+    ...(hasValidId ? { id: recipe.id } : {}),
     name: recipe.name,
-    ingredients: recipe.ingredients,
-    total_cost: recipe.totalCost,
-    batch_size: recipe.batchSize,
-    number_of_units: recipe.numberOfUnits,
-    cost_per_unit: recipe.costPerUnit,
-    original_batch_size: recipe.originalBatchSize,
-    packaging: recipe.packaging,
-    total_packaging_cost: recipe.totalPackagingCost,
-    category: recipe.category,
-    description: recipe.description,
-    instructions: recipe.instructions,
+    ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+    total_cost: recipe.totalCost ?? 0,
+    batch_size: recipe.batchSize ?? null,
+    number_of_units: recipe.numberOfUnits ?? null,
+    cost_per_unit: recipe.costPerUnit ?? null,
+    original_batch_size: recipe.originalBatchSize ?? null,
+    packaging: Array.isArray(recipe.packaging) ? recipe.packaging : [],
+    total_packaging_cost: recipe.totalPackagingCost ?? 0,
+    category: recipe.category ?? null,
+    description: recipe.description ?? null,
+    instructions: recipe.instructions ?? null,
     user_id: user.id
   };
-  
-  const payload = recipe.id ? { ...dbRecipe, id: recipe.id } : dbRecipe;
 
   const { data, error } = await supabase
     .from('recipes')
-    .upsert([payload], { onConflict: 'id' })
+    .upsert([dbRecipe], { onConflict: 'id' })
     .select()
     .single();
   
