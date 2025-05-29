@@ -1014,4 +1014,6 @@ export function exportRawMaterialsToExcel(materials: RawMaterial[]): void {
 
   const timestamp = new Date().toISOString().split('T')[0];
   XLSX.writeFile(wb, `Raw_Materials_Inventory_${timestamp}.xlsx`);
-} 
+}
+
+export { styles, applyCellStyle }; 

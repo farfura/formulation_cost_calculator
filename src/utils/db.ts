@@ -4,9 +4,14 @@ import { v4 as uuidv4, validate as validateUUID } from 'uuid';
 
 // Raw Materials
 export async function getRawMaterialsFromDB(): Promise<RawMaterial[]> {
+  // Get the current user's ID
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
   const { data, error } = await supabase
     .from('raw_materials')
     .select('*')
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false });
   
   if (error) throw error;
@@ -26,37 +31,32 @@ export async function getRawMaterialsFromDB(): Promise<RawMaterial[]> {
 
 export async function saveRawMaterialToDB(material: RawMaterial): Promise<RawMaterial> {
   try {
+    // Get the current user's ID
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
     // Only include id if it is a valid UUID
     const hasValidId = material.id && validateUUID(material.id);
     const dbMaterial = {
       ...(hasValidId ? { id: material.id } : {}),
       name: material.name,
-      cost: material.totalCost, // Set cost equal to totalCost for now
       total_cost: material.totalCost,
       total_weight: material.totalWeight,
       weight_unit: material.weightUnit,
       cost_per_gram: material.costPerGram,
+      user_id: user.id,
       // created_at and updated_at are handled by DB triggers
     };
 
-    const payload = hasValidId ? dbMaterial : {
-      name: material.name,
-      cost: material.totalCost, // Set cost equal to totalCost for now
-      total_cost: material.totalCost,
-      total_weight: material.totalWeight,
-      weight_unit: material.weightUnit,
-      cost_per_gram: material.costPerGram
-    };
-
-    console.log('Saving material with payload:', JSON.stringify(payload, null, 2));
+    console.log('Saving material with payload:', JSON.stringify(dbMaterial, null, 2));
     
     const { data, error } = await supabase
       .from('raw_materials')
-      .upsert([payload], { 
+      .upsert([dbMaterial], { 
         onConflict: 'id',
         ignoreDuplicates: false 
       })
-      .select('*')  // Select all fields including timestamps
+      .select('*')
       .single();
     
     if (error) {
@@ -81,15 +81,19 @@ export async function saveRawMaterialToDB(material: RawMaterial): Promise<RawMat
     };
   } catch (error) {
     console.error('Error in saveRawMaterialToDB:', error instanceof Error ? error.message : 'Unknown error');
-    throw error; // Re-throw to be handled by the UI
+    throw error;
   }
 }
 
 export async function deleteRawMaterialFromDB(id: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
   const { error } = await supabase
     .from('raw_materials')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', user.id);
   
   if (error) throw error;
 }
@@ -97,9 +101,15 @@ export async function deleteRawMaterialFromDB(id: string) {
 // Recipes
 export async function getRecipesFromDB() {
   console.log('Fetching recipes from DB - START');
+  
+  // Get the current user's ID
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
   const { data, error } = await supabase
     .from('recipes')
     .select('*')
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false });
   
   if (error) {
@@ -158,11 +168,14 @@ export async function getRecipesFromDB() {
 }
 
 export async function saveRecipeToDB(recipe: Recipe) {
+  // Get the current user's ID
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
   // Transform the data to match the database schema
   const dbRecipe = {
-    // id: recipe.id, // Let DB handle ID generation for new, or use for upsert if existing
     name: recipe.name,
-    ingredients: recipe.ingredients, // Assuming ingredients structure is compatible or handled
+    ingredients: recipe.ingredients,
     total_cost: recipe.totalCost,
     batch_size: recipe.batchSize,
     number_of_units: recipe.numberOfUnits,
@@ -172,7 +185,8 @@ export async function saveRecipeToDB(recipe: Recipe) {
     total_packaging_cost: recipe.totalPackagingCost,
     category: recipe.category,
     description: recipe.description,
-    instructions: recipe.instructions
+    instructions: recipe.instructions,
+    user_id: user.id
   };
   
   const payload = recipe.id ? { ...dbRecipe, id: recipe.id } : dbRecipe;
@@ -192,7 +206,7 @@ export async function saveRecipeToDB(recipe: Recipe) {
   return {
     id: data.id,
     name: data.name,
-    ingredients: data.ingredients, // Ensure this is correctly transformed if needed
+    ingredients: data.ingredients,
     totalCost: data.total_cost,
     batchSize: data.batch_size,
     numberOfUnits: data.number_of_units,
@@ -209,19 +223,28 @@ export async function saveRecipeToDB(recipe: Recipe) {
 }
 
 export async function deleteRecipeFromDB(id: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
   const { error } = await supabase
     .from('recipes')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', user.id);
   
   if (error) throw error;
 }
 
 // Packaging Items
 export async function getPackagingItemsFromDB(): Promise<PackagingItem[]> {
+  // Get the current user's ID
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
   const { data, error } = await supabase
     .from('packaging_items')
     .select('*')
+    .eq('user_id', user.id)
     .order('created_at', { ascending: false });
   
   if (error) throw error;
@@ -241,19 +264,24 @@ export async function getPackagingItemsFromDB(): Promise<PackagingItem[]> {
 
 export async function savePackagingItemToDB(item: PackagingItem): Promise<PackagingItem> {
   try {
+    // Get the current user's ID
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error('User not authenticated');
+
     // Transform data from camelCase (TS) to snake_case (DB) if necessary
-    const payload = item.id ? item : {
+    const payload = item.id ? { ...item, user_id: user.id } : {
       name: item.name,
       cost: item.cost,
       description: item.description,
       supplier: item.supplier,
-      category: item.category
+      category: item.category,
+      user_id: user.id
     };
 
     const { data, error } = await supabase
       .from('packaging_items')
       .upsert([payload], { onConflict: 'id' })
-      .select('*')  // Select all fields including timestamps
+      .select('*')
       .single();
     
     if (error) {
@@ -283,10 +311,14 @@ export async function savePackagingItemToDB(item: PackagingItem): Promise<Packag
 }
 
 export async function deletePackagingItemFromDB(id: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+
   const { error } = await supabase
     .from('packaging_items')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', user.id);
   
   if (error) throw error;
 } 
