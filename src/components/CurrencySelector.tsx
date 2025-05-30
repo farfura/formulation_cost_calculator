@@ -36,7 +36,6 @@ export default function CurrencySelector({ className = '', showLabel = true }: C
           className="w-full h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 hover:border-gray-300 transition-colors overflow-hidden text-ellipsis"
         >
           <div className="flex items-center gap-2">
-            <span className="text-lg font-medium">{getCurrencySymbol(currency)}</span>
             <SelectValue placeholder="Select currency" />
           </div>
         </SelectTrigger>

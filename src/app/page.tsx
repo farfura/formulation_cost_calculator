@@ -15,7 +15,7 @@ import {
   savePackagingItemToDB,
   deletePackagingItemFromDB
 } from '@/utils/db';
-import { exportToExcel } from '@/utils/export';
+import { exportToExcel, exportRawMaterialsToExcel } from '@/utils/export';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -143,10 +143,10 @@ export default function Home() {
       if (editingMaterial) {
         updatedMaterials = materials.map(m => m.id === material.id ? savedMaterial : m);
         setEditingMaterial(undefined);
-        setShowSuccessMessage(`✨ "${material.name}" updated successfully!`);
+        setShowSuccessMessage(`<span className="text-2xl">✨</span> "${material.name}" updated successfully!`);
       } else {
         updatedMaterials = [...materials, savedMaterial];
-        setShowSuccessMessage(`🎉 "${material.name}" added to your collection!`);
+        setShowSuccessMessage(`<span className="text-2xl">🎉</span> "${material.name}" added to your collection!`);
       }
       setMaterials(updatedMaterials);
       setShowMaterialForm(false);
@@ -167,7 +167,7 @@ export default function Home() {
       await deleteRawMaterialFromDB(id);
       const updatedMaterials = materials.filter(m => m.id !== id);
       setMaterials(updatedMaterials);
-      setShowSuccessMessage(`🗑️ "${materialName}" removed from your collection`);
+      setShowSuccessMessage(`<span className="text-2xl">🗑️</span> "${materialName}" removed from your collection`);
     } catch (err) {
       console.error('Error deleting material:', err);
       setError('Failed to delete material');
@@ -196,10 +196,10 @@ export default function Home() {
       if (editingRecipe) {
         updatedRecipes = recipes.map(r => r.id === recipe.id ? savedRecipe : r);
         setEditingRecipe(undefined);
-        setShowSuccessMessage(`✨ Recipe "${recipe.name}" updated successfully!`);
+        setShowSuccessMessage(`<span className="text-2xl">✨</span> Recipe "${recipe.name}" updated successfully!`);
       } else {
         updatedRecipes = [...recipes, savedRecipe];
-        setShowSuccessMessage(`🧪 Recipe "${recipe.name}" created successfully!`);
+        setShowSuccessMessage(`<span className="text-2xl">🧪</span> Recipe "${recipe.name}" created successfully!`);
       }
       setRecipes(updatedRecipes);
       setShowRecipeForm(false);
@@ -218,7 +218,7 @@ export default function Home() {
       await deleteRecipeFromDB(id);
       const updatedRecipes = recipes.filter(r => r.id !== id);
       setRecipes(updatedRecipes);
-      setShowSuccessMessage(`🗑️ Recipe "${recipeName}" deleted`);
+      setShowSuccessMessage(`<span className="text-2xl">🗑️</span> Recipe "${recipeName}" deleted`);
     } catch (err) {
       console.error('Error deleting recipe:', err);
       setError('Failed to delete recipe');
@@ -239,7 +239,7 @@ export default function Home() {
 
   const handleExportRecipe = (recipe: Recipe) => {
     exportToExcel(recipe);
-    setShowSuccessMessage(`📊 Recipe "${recipe.name}" exported successfully!`);
+    setShowSuccessMessage(`<span className="text-2xl">📊</span> Recipe "${recipe.name}" exported successfully!`);
   };
 
   const handleUpdateRecipe = async (updatedRecipe: Recipe) => {
@@ -485,7 +485,7 @@ export default function Home() {
 
               <motion.div whileHover={{ scale: 1.1 }}>
                 <Button
-                  variant="solid"
+                  variant="default"
                   size="lg"
                   onClick={handleSignOut}
                   className="bg-red-500 text-white hover:bg-red-600 flex items-center gap-2"
@@ -666,7 +666,7 @@ export default function Home() {
                           className="w-full justify-start bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-lg"
                         >
                           <Plus className="w-4 h-4 mr-2" />
-                          Add New Material ✨
+                          Add New Material <span className="text-2xl">✨</span>
                         </Button>
                       </motion.div>
                       <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
@@ -676,7 +676,7 @@ export default function Home() {
                           className="w-full justify-start bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white disabled:opacity-50 shadow-lg"
                         >
                           <ChefHat className="w-4 h-4 mr-2" />
-                          Create New Recipe 🧪
+                          Create New Recipe <span className="text-2xl">🧪</span>
                         </Button>
                       </motion.div>
                     </CardContent>
@@ -753,7 +753,7 @@ export default function Home() {
                           <Lightbulb className="w-12 h-12 text-purple-500 mx-auto mb-4" />
                         </motion.div>
                         <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-yellow-600 bg-clip-text text-transparent mb-3">
-                          Welcome to your Beauty Laboratory! ✨
+                          Welcome to your Beauty Laboratory! <span className="text-2xl">✨</span>
                         </h3>
                         <p className="text-lg text-gray-700 mb-6">
                           Transform your creativity into beautiful, cost-effective formulations! Start by adding your ingredients to begin creating professional formulations with precise cost calculations.
@@ -767,7 +767,7 @@ export default function Home() {
                             className="bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-500 hover:from-purple-600 hover:via-pink-600 hover:to-yellow-600 text-white px-8 py-3 text-lg font-semibold shadow-lg"
                           >
                             <Plus className="w-5 h-5 mr-2" />
-                            Add Your First Material 🌟
+                            Add Your First Material <span className="text-2xl">🌟</span>
                           </Button>
                         </motion.div>
                       </div>
@@ -791,22 +791,36 @@ export default function Home() {
               <motion.div variants={itemVariants}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
-                      💖 Materials Management
+                    <h2 className="text-3xl font-bold flex items-center gap-2">
+                      <span className="text-2xl">💖</span>
+                      <span className="bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
+                        Materials Management
+                      </span>
                     </h2>
                     <p className="text-gray-600 flex items-center gap-1">
-                      Manage your ingredient inventory and costs <Sparkles className="w-4 h-4 text-pink-500" />
+                      Manage your ingredient inventory and costs <span className="text-2xl">✨</span>
                     </p>
                   </div>
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      onClick={() => setShowMaterialForm(true)}
-                      className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-lg"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Add Material ✨
-                    </Button>
-                  </motion.div>
+                  <div className="flex gap-3">
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Button
+                        onClick={() => setShowMaterialForm(true)}
+                        className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white shadow-lg"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Material <span className="text-2xl">✨</span>
+                      </Button>
+                    </motion.div>
+                    <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                      <Button
+                        onClick={() => exportRawMaterialsToExcel(materials, currency)}
+                        className="h-12 px-6 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                      >
+                        <Download className="w-5 h-5 mr-2" />
+                        Export to Excel
+                      </Button>
+                    </motion.div>
+                  </div>
                 </div>
               </motion.div>
 
@@ -834,7 +848,7 @@ export default function Home() {
                             className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white px-8 py-3 text-lg font-semibold shadow-lg"
                           >
                             <Plus className="w-5 h-5 mr-2" />
-                            Add Your First Material 🌟
+                            Add Your First Material <span className="text-2xl">🌟</span>
                           </Button>
                         </motion.div>
                       </div>
@@ -865,11 +879,14 @@ export default function Home() {
               <motion.div variants={itemVariants}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
-                      🧪 Recipe Collection ({recipes.length})
+                    <h2 className="text-3xl font-bold flex items-center gap-2">
+                      <span className="text-2xl">🧪</span>
+                      <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                        Recipe Collection ({recipes.length})
+                      </span>
                     </h2>
                     <p className="text-gray-600 flex items-center gap-1">
-                      Create and manage your magical formulations <Heart className="w-4 h-4 text-purple-500" />
+                      Create and manage your magical formulations <span className="text-2xl">❤️</span>
                     </p>
                   </div>
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -879,7 +896,7 @@ export default function Home() {
                       className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white disabled:opacity-50 shadow-lg"
                     >
                       <ChefHat className="w-4 h-4 mr-2" />
-                      Create Recipe ✨
+                      Create Recipe <span className="text-2xl">✨</span>
                     </Button>
                   </motion.div>
                 </div>
@@ -898,7 +915,7 @@ export default function Home() {
                           <ChefHat className="w-20 h-20 text-purple-400 mx-auto mb-6" />
                         </motion.div>
                         <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent mb-3">
-                          Add materials first! 🌟
+                          Add materials first! <span className="text-2xl">🌟</span>
                         </h3>
                         <p className="text-lg text-gray-600 mb-6">You need ingredients before creating magical recipes</p>
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -907,7 +924,7 @@ export default function Home() {
                             className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white px-8 py-3 text-lg font-semibold shadow-lg"
                           >
                             <Package className="w-5 h-5 mr-2" />
-                            Go to Materials 💕
+                            Go to Materials <span className="text-2xl">💕</span>
                           </Button>
                         </motion.div>
                       </div>
@@ -920,11 +937,11 @@ export default function Home() {
                           <ChefHat className="w-20 h-20 text-purple-400 mx-auto mb-6" />
                         </motion.div>
                         <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent mb-3">
-                          No recipes yet! 👩‍🍳
+                          No recipes yet! <span className="text-2xl">👩‍🍳</span>
                         </h3>
                         <p className="text-lg text-gray-600 mb-2">Ready to create your first masterpiece?</p>
                         <p className="text-sm text-gray-500 mb-6">
-                          You have {materials.length} ingredient{materials.length > 1 ? 's' : ''} ready to use! ✨
+                          You have {materials.length} ingredient{materials.length > 1 ? 's' : ''} ready to use! <span className="text-2xl">✨</span>
                         </p>
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                           <Button
@@ -932,7 +949,7 @@ export default function Home() {
                             className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white px-8 py-3 text-lg font-semibold shadow-lg"
                           >
                             <Plus className="w-5 h-5 mr-2" />
-                            Create Your First Recipe 🌟
+                            Create Your First Recipe <span className="text-2xl">🌟</span>
                           </Button>
                         </motion.div>
                       </div>
@@ -967,11 +984,14 @@ export default function Home() {
               <motion.div variants={itemVariants}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-orchid-600 to-plum-600 bg-clip-text text-transparent">
-                      🏷️ Label Generation
+                    <h2 className="text-3xl font-bold flex items-center gap-2">
+                      <span className="text-2xl">🏷️</span>
+                      <span className="bg-gradient-to-r from-orchid-600 to-plum-600 bg-clip-text text-transparent">
+                        Label Generation
+                      </span>
                     </h2>
                     <p className="text-gray-600 flex items-center gap-1">
-                      Generate labels for your products <Sparkles className="w-4 h-4 text-orchid-500" />
+                      Generate labels for your products <span className="text-2xl">✨</span>
                     </p>
                   </div>
                   {recipes.length > 0 && (
@@ -981,7 +1001,7 @@ export default function Home() {
                         className="bg-gradient-to-r from-orchid-500 to-plum-500 hover:from-orchid-600 hover:to-plum-600 text-white shadow-lg"
                       >
                         <Plus className="w-4 h-4 mr-2" />
-                        Generate Label ✨
+                        Generate Label <span className="text-2xl">✨</span>
                       </Button>
                     </motion.div>
                   )}
@@ -1000,7 +1020,7 @@ export default function Home() {
                           <ChefHat className="w-20 h-20 text-purple-400 mx-auto mb-6" />
                         </motion.div>
                         <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent mb-3">
-                          No materials to generate labels for! 🌟
+                          No materials to generate labels for! <span className="text-2xl">🌟</span>
                         </h3>
                         <p className="text-lg text-gray-600 mb-6">Add materials to generate labels</p>
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
@@ -1009,7 +1029,7 @@ export default function Home() {
                             className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white px-8 py-3 text-lg font-semibold shadow-lg"
                           >
                             <Plus className="w-5 h-5 mr-2" />
-                            Go to Materials 💕
+                            Go to Materials <span className="text-2xl">💕</span>
                           </Button>
                         </motion.div>
                       </div>
@@ -1022,11 +1042,11 @@ export default function Home() {
                           <ChefHat className="w-20 h-20 text-purple-400 mx-auto mb-6" />
                         </motion.div>
                         <h3 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent mb-3">
-                          No recipes to generate labels for! 👩‍🍳
+                          No recipes to generate labels for! <span className="text-2xl">👩‍🍳</span>
                         </h3>
                         <p className="text-lg text-gray-600 mb-2">Ready to create recipes to generate labels?</p>
                         <p className="text-sm text-gray-500 mb-6">
-                          You have {materials.length} ingredient{materials.length > 1 ? 's' : ''} ready to use! ✨
+                          You have {materials.length} ingredient{materials.length > 1 ? 's' : ''} ready to use! <span className="text-2xl">✨</span>
                         </p>
                         <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                           <Button
@@ -1034,7 +1054,7 @@ export default function Home() {
                             className="bg-gradient-to-r from-purple-500 to-violet-500 hover:from-purple-600 hover:to-violet-600 text-white px-8 py-3 text-lg font-semibold shadow-lg"
                           >
                             <Plus className="w-5 h-5 mr-2" />
-                            Create Recipes to Generate Labels 🌟
+                            Create Recipes to Generate Labels <span className="text-2xl">🌟</span>
                           </Button>
                         </motion.div>
                       </div>
@@ -1102,8 +1122,11 @@ export default function Home() {
               <motion.div variants={itemVariants}>
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
-                      💰 Product Pricing
+                    <h2 className="text-3xl font-bold flex items-center gap-2">
+                      <span className="text-2xl">💰</span>
+                      <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                        Product Pricing
+                      </span>
                     </h2>
                     <p className="text-gray-600 flex items-center gap-1">
                       Calculate your product costs and profit margins
@@ -1144,7 +1167,7 @@ export default function Home() {
               <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-pink-50 to-rose-50">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold bg-gradient-to-r from-pink-600 to-rose-600 bg-clip-text text-transparent">
-                    {editingMaterial ? '✨ Edit Material' : '✨ Add New Material'}
+                    {editingMaterial ? (<><span className="text-2xl">✨</span> Edit Material</>) : (<><span className="text-2xl">✨</span> Add New Material</>)}
                   </h2>
                   <Button
                     variant="ghost"
@@ -1190,7 +1213,7 @@ export default function Home() {
             >
               <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-violet-50">
                 <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
-                  {editingRecipe ? '🧪 Edit Recipe' : '🧪 Create New Recipe'}
+                  {editingRecipe ? (<><span className="text-2xl">🧪</span> Edit Recipe</>) : (<><span className="text-2xl">🧪</span> Create New Recipe</>)}
                 </h2>
               </div>
               <div className="p-6">

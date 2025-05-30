@@ -272,7 +272,7 @@ function mergeCells(ws: any, range: string) {
 /**
  * Export recipe to CSV (simplified version)
  */
-export function exportToCSV(recipe: Recipe): void {
+export function exportToCSV(recipe: Recipe, currency: Currency = 'PKR'): void {
   // Validate recipe and ingredients
   if (!recipe || !recipe.ingredients || recipe.ingredients.length === 0) {
     alert('Recipe has no ingredients to export');
@@ -288,8 +288,8 @@ export function exportToCSV(recipe: Recipe): void {
     {
       'Recipe Name': recipe.name,
       'Total Batch Weight (g)': totalWeight.toFixed(2),
-      'Total Cost': formatCurrency(recipe.totalCost),
-      'Cost per Gram': formatCurrency(recipe.costPerUnit || 0),
+      'Total Cost': formatCurrency(recipe.totalCost, currency),
+      'Cost per Gram': formatCurrency(recipe.costPerUnit || 0, currency),
       'Number of Ingredients': recipe.ingredients.length.toString(),
       'Created Date': new Date().toLocaleDateString()
     },
@@ -316,8 +316,8 @@ export function exportToCSV(recipe: Recipe): void {
         'Total Batch Weight (g)': `${ingredient.amount || 0} ${ingredient.unit || 'g'}`,
         'Total Cost': `${(ingredient.amountInGrams || 0).toFixed(2)}g`,
         'Cost per Gram': `${percentage}%`,
-        'Number of Ingredients': formatCurrency(ingredient.cost || 0),
-        'Created Date': formatCurrency(costPerGram)
+        'Number of Ingredients': formatCurrency(ingredient.cost || 0, currency),
+        'Created Date': formatCurrency(costPerGram, currency)
       });
     }
   });
@@ -328,8 +328,8 @@ export function exportToCSV(recipe: Recipe): void {
     'Total Batch Weight (g)': `${recipe.ingredients.length} ingredients`,
     'Total Cost': `${totalWeight.toFixed(2)}g`,
     'Cost per Gram': '100%',
-    'Number of Ingredients': formatCurrency(recipe.totalCost),
-    'Created Date': formatCurrency(recipe.costPerUnit || 0)
+    'Number of Ingredients': formatCurrency(recipe.totalCost, currency),
+    'Created Date': formatCurrency(recipe.costPerUnit || 0, currency)
   });
   
   // Rename columns for clarity
@@ -481,7 +481,7 @@ export function exportMultipleRecipesToExcel(recipes: Recipe[], materials?: RawM
 /**
  * Export raw materials inventory to Excel with beautiful formatting
  */
-export function exportRawMaterialsToExcel(materials: RawMaterial[]): void {
+export function exportRawMaterialsToExcel(materials: RawMaterial[], currency: Currency = 'PKR'): void {
   const wb = XLSX.utils.book_new();
   
   // Calculate statistics
@@ -497,8 +497,8 @@ export function exportRawMaterialsToExcel(materials: RawMaterial[]): void {
     ['Inventory Summary', '', '', '', ''],
     ['Generated on:', new Date().toLocaleString(), '', '', ''],
     ['Total Materials:', totalMaterials.toString(), '', '', ''],
-    ['Total Inventory Value:', formatCurrency(totalValue), '', '', ''],
-    ['Average Cost per Gram:', formatCurrency(avgCostPerGram), '', '', ''],
+    ['Total Inventory Value:', formatCurrency(totalValue, currency), '', '', ''],
+    ['Average Cost per Gram:', formatCurrency(avgCostPerGram, currency), '', '', ''],
     [''], // Empty row
     ['Material Name', 'Weight', 'Unit', 'Cost per Gram', 'Total Cost']
   ];
@@ -508,8 +508,8 @@ export function exportRawMaterialsToExcel(materials: RawMaterial[]): void {
       material.name,
       material.totalWeight.toString(),
       material.weightUnit,
-      formatCurrency(material.costPerGram || 0),
-      formatCurrency(material.totalCost || 0)
+      formatCurrency(material.costPerGram || 0, currency),
+      formatCurrency(material.totalCost || 0, currency)
     ]);
   });
 
@@ -574,8 +574,8 @@ export function exportRawMaterialsToExcel(materials: RawMaterial[]): void {
       material.totalWeight.toString(),
       material.weightUnit,
       weightInGrams.toFixed(2),
-      formatCurrency(material.costPerGram || 0),
-      formatCurrency(material.totalCost || 0)
+      formatCurrency(material.costPerGram || 0, currency),
+      formatCurrency(material.totalCost || 0, currency)
     ]);
   });
 
