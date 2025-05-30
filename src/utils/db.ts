@@ -128,26 +128,33 @@ export async function getRecipesFromDB() {
   const transformedData = data.map(recipe => {
     // Ensure ingredients is an array and has the correct structure
     const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+    console.log('Recipe ingredients before transform:', ingredients);
     
-    return {
+    const transformedRecipe = {
       id: recipe.id,
       name: recipe.name,
       ingredients: ingredients.map((ing: { 
         name?: string;
         materialName?: string;
+        materialId?: string;
         quantity?: number;
         amount?: number;
         unit: string;
         amount_in_grams?: number;
         amountInGrams?: number;
         cost: number;
-      }) => ({
-        materialName: ing.name || ing.materialName || '',
-        amount: ing.quantity || ing.amount || 0,
-        unit: ing.unit,
-        amountInGrams: ing.amount_in_grams || ing.amountInGrams || 0,
-        cost: ing.cost
-      })),
+      }) => {
+        const transformedIngredient = {
+          materialId: ing.materialId || '',
+          materialName: ing.name || ing.materialName || '',
+          amount: ing.quantity || ing.amount || 0,
+          unit: ing.unit,
+          amountInGrams: ing.amount_in_grams || ing.amountInGrams || 0,
+          cost: ing.cost
+        };
+        console.log('Transformed ingredient:', transformedIngredient);
+        return transformedIngredient;
+      }),
       totalCost: recipe.total_cost || recipe.totalCost || 0,
       batchSize: recipe.batch_size || recipe.batchSize,
       numberOfUnits: recipe.number_of_units || recipe.numberOfUnits,
@@ -161,9 +168,11 @@ export async function getRecipesFromDB() {
       created_at: recipe.created_at,
       updated_at: recipe.updated_at
     };
+    console.log('Transformed recipe:', transformedRecipe);
+    return transformedRecipe;
   });
 
-  console.log('Transformed recipes:', transformedData);
+  console.log('All transformed recipes:', transformedData);
   return transformedData;
 }
 
@@ -175,11 +184,21 @@ export async function saveRecipeToDB(recipe: Recipe) {
   // Only include id if it is a valid UUID
   const hasValidId = recipe.id && validateUUID(recipe.id);
 
+  console.log('Original recipe:', recipe);
+  console.log('Original ingredients:', recipe.ingredients);
+
   // Sanitize payload: ensure no undefined, always arrays for JSONB fields
   const dbRecipe = {
     ...(hasValidId ? { id: recipe.id } : {}),
     name: recipe.name,
-    ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients : [],
+    ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients.map(ing => ({
+      materialId: ing.materialId || null,
+      materialName: ing.materialName,
+      amount: ing.amount,
+      unit: ing.unit,
+      amountInGrams: ing.amountInGrams,
+      cost: ing.cost
+    })) : [],
     total_cost: recipe.totalCost ?? 0,
     batch_size: recipe.batchSize ?? null,
     number_of_units: recipe.numberOfUnits ?? null,
@@ -193,6 +212,9 @@ export async function saveRecipeToDB(recipe: Recipe) {
     user_id: user.id
   };
 
+  console.log('Sanitized recipe for DB:', dbRecipe);
+  console.log('Sanitized ingredients for DB:', dbRecipe.ingredients);
+
   const { data, error } = await supabase
     .from('recipes')
     .upsert([dbRecipe], { onConflict: 'id' })
@@ -204,11 +226,21 @@ export async function saveRecipeToDB(recipe: Recipe) {
     throw error;
   }
 
+  console.log('Data returned from DB:', data);
+  console.log('Ingredients returned from DB:', data.ingredients);
+
   // Transform back to match the TypeScript interface
-  return {
+  const transformedRecipe = {
     id: data.id,
     name: data.name,
-    ingredients: data.ingredients,
+    ingredients: data.ingredients.map((ing: any) => ({
+      materialId: ing.materialId || '',
+      materialName: ing.materialName || ing.name || '',
+      amount: ing.amount || ing.quantity || 0,
+      unit: ing.unit,
+      amountInGrams: ing.amountInGrams || ing.amount_in_grams || 0,
+      cost: ing.cost || 0
+    })),
     totalCost: data.total_cost,
     batchSize: data.batch_size,
     numberOfUnits: data.number_of_units,
@@ -222,6 +254,11 @@ export async function saveRecipeToDB(recipe: Recipe) {
     created_at: data.created_at,
     updated_at: data.updated_at
   };
+
+  console.log('Final transformed recipe:', transformedRecipe);
+  console.log('Final transformed ingredients:', transformedRecipe.ingredients);
+
+  return transformedRecipe;
 }
 
 export async function deleteRecipeFromDB(id: string) {

@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Download, FileSpreadsheet, FileText, Sparkles, Package, Database } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useCurrency } from '@/contexts/CurrencyContext';
 
 interface ExportButtonProps {
   recipe?: Recipe;
@@ -32,6 +33,7 @@ export default function ExportButton({
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const { currency } = useCurrency();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -71,14 +73,14 @@ export default function ExportButton({
 
   const handleExportExcel = () => {
     if (recipe) {
-      exportToExcel(recipe);
+      exportToExcel(recipe, currency, materials);
     }
     setIsOpen(false);
   };
 
   const handleExportAllExcel = () => {
     if (recipes && recipes.length > 0) {
-      exportMultipleRecipesToExcel(recipes);
+      exportMultipleRecipesToExcel(recipes, materials);
     }
     setIsOpen(false);
   };
@@ -227,116 +229,7 @@ export default function ExportButton({
 
   // All data export (both recipes and materials)
   if (variant === 'all') {
-    const hasRecipes = recipes && recipes.length > 0;
-    const hasMaterials = materials && materials.length > 0;
-    const hasAnyData = hasRecipes || hasMaterials;
-
-    // Portal dropdown component
-    const DropdownPortal = () => {
-      if (!isOpen || !hasAnyData || typeof document === 'undefined') return null;
-      
-      return createPortal(
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: -10 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: -10 }}
-          transition={{ duration: 0.2 }}
-          ref={dropdownRef}
-          className="fixed w-64"
-          style={{ 
-            zIndex: 999999,
-            top: dropdownPosition.top,
-            left: Math.max(8, dropdownPosition.left) // Ensure it doesn't go off screen
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Card className="bg-white border border-gray-200 shadow-2xl">
-            <CardContent className="p-2">
-              {hasRecipes && (
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleExportAllExcel();
-                      setIsOpen(false);
-                    }}
-                    variant="ghost"
-                    className="w-full justify-start h-12 hover:bg-green-50 hover:text-green-700"
-                  >
-                    <FileSpreadsheet className="w-5 h-5 mr-3 text-green-600" />
-                    <div className="text-left">
-                      <p className="font-medium">Export All Recipes</p>
-                      <p className="text-xs text-muted-foreground">{recipes?.length} recipes</p>
-                    </div>
-                  </Button>
-                </motion.div>
-              )}
-              {hasMaterials && (
-                <motion.div
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleExportMaterialsExcel();
-                      setIsOpen(false);
-                    }}
-                    variant="ghost"
-                    className="w-full justify-start h-12 hover:bg-purple-50 hover:text-purple-700"
-                  >
-                    <Package className="w-5 h-5 mr-3 text-purple-600" />
-                    <div className="text-left">
-                      <p className="font-medium">Export Materials</p>
-                      <p className="text-xs text-muted-foreground">{materials?.length} materials</p>
-                    </div>
-                  </Button>
-                </motion.div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>,
-        document.body
-      );
-    };
-
-    return (
-      <div className={`relative ${className}`} ref={dropdownRef}>
-        <motion.div
-          whileHover={{ scale: hasAnyData ? 1.05 : 1 }}
-          whileTap={{ scale: hasAnyData ? 0.95 : 1 }}
-        >
-          <Button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (hasAnyData) {
-                handleToggleDropdown(e);
-              }
-            }}
-            className={`h-12 px-6 shadow-lg hover:shadow-xl transition-all duration-300 ${
-              hasAnyData 
-                ? 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white' 
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-            }`}
-            size="lg"
-            disabled={!hasAnyData}
-            ref={buttonRef}
-          >
-            <Download className={`w-5 h-5 mr-2 ${isOpen ? 'rotate-180' : ''} transition-transform duration-200`} />
-            Export All Data ⚡
-          </Button>
-        </motion.div>
-
-        <AnimatePresence>
-          {isOpen && hasAnyData && (
-            <DropdownPortal />
-          )}
-        </AnimatePresence>
-      </div>
-    );
+    return null;
   }
 
   return null;
