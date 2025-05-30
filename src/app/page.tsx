@@ -451,8 +451,8 @@ export default function Home() {
                 <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-500 via-pink-400 to-yellow-500 bg-clip-text text-transparent">
                   ✨ Beauty Formula Calculator
                 </h1>
-                <p className="text-sm text-muted-foreground flex items-center gap-1">
-                  Welcome, {user?.email} <Heart className="w-3 h-3 text-orchid-500" />
+                <p className="text-sm font-medium text-gray-700 flex items-center gap-1 bg-white p-1 rounded-md shadow-md">
+                  Logged in as: {user?.email} <Heart className="w-3 h-3 text-red-500" />
                 </p>
               </div>
             </motion.div>
@@ -483,14 +483,14 @@ export default function Home() {
                 </Button>
               </motion.div>
 
-              <motion.div whileHover={{ scale: 1.05 }}>
+              <motion.div whileHover={{ scale: 1.1 }}>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant="solid"
+                  size="lg"
                   onClick={handleSignOut}
-                  className="text-gray-600 hover:text-gray-900 flex items-center gap-2"
+                  className="bg-red-500 text-white hover:bg-red-600 flex items-center gap-2"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-5 h-5" />
                   Sign Out
                 </Button>
               </motion.div>

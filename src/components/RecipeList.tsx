@@ -27,6 +27,8 @@ interface RecipeListProps {
 export default function RecipeList({ recipes, materials, onEdit, onDelete, onExport, onUpdateRecipe, showHeader = true }: RecipeListProps) {
   const { currency } = useCurrency();
 
+  console.log('Materials:', materials);
+
   // Helper to get material cost per gram
   const getMaterialCostPerGram = (materialId: string) => {
     const material = materials.find(m => m.id === materialId);
@@ -96,6 +98,7 @@ export default function RecipeList({ recipes, materials, onEdit, onDelete, onExp
                 <tbody>
                   {percentages.map(({ ingredient, percentage }, idx) => {
                     const materialCostPerGram = getMaterialCostPerGram(ingredient.materialId);
+                    console.log('Material ID:', ingredient.materialId, 'Material Cost/Gram:', materialCostPerGram, 'Ingredient Cost:', ingredient.cost);
                     return (
                       <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-purple-50/60'}>
                         <td className="py-2 px-4 text-purple-900 font-semibold">{ingredient.materialName}</td>

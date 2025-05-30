@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { getCurrencyOptions } from '@/utils/currency';
+import { getCurrencyOptions, getCurrencySymbol } from '@/utils/currency';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { DollarSign, Globe } from 'lucide-react';
@@ -33,10 +33,10 @@ export default function CurrencySelector({ className = '', showLabel = true }: C
       <Select value={currency} onValueChange={(value: Currency) => setCurrency(value)}>
         <SelectTrigger 
           id="currency-select"
-          className="w-full h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 hover:border-gray-300 transition-colors"
+          className="w-full h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20 hover:border-gray-300 transition-colors overflow-hidden text-ellipsis"
         >
           <div className="flex items-center gap-2">
-            <DollarSign className="w-4 h-4 text-gray-500" />
+            <span className="text-lg font-medium">{getCurrencySymbol(currency)}</span>
             <SelectValue placeholder="Select currency" />
           </div>
         </SelectTrigger>
