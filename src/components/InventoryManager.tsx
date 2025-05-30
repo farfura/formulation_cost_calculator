@@ -261,8 +261,9 @@ export const InventoryManager: React.FC = () => {
       
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-pink-400 to-pink-600 bg-clip-text text-transparent flex items-center gap-2">
-            <span role="img" aria-label="inventory">📦</span> Inventory Management
+          <h2 className="text-3xl font-bold flex items-center gap-2">
+            <span className="text-2xl">📦</span>
+            <span className="text-[#E75A8B]">Inventory Management</span>
           </h2>
           <p className="text-gray-600">Track your raw materials and stock levels</p>
         </div>

@@ -66,7 +66,7 @@ export default function ExportButton({
 
   const handleExportCSV = () => {
     if (recipe) {
-      exportToCSV(recipe);
+      exportToCSV(recipe, currency);
     }
     setIsOpen(false);
   };
@@ -80,14 +80,14 @@ export default function ExportButton({
 
   const handleExportAllExcel = () => {
     if (recipes && recipes.length > 0) {
-      exportMultipleRecipesToExcel(recipes, materials);
+      exportMultipleRecipesToExcel(recipes, materials, currency);
     }
     setIsOpen(false);
   };
 
   const handleExportMaterialsExcel = () => {
     if (materials && materials.length > 0) {
-      exportRawMaterialsToExcel(materials);
+      exportRawMaterialsToExcel(materials, currency);
     }
     setIsOpen(false);
   };
