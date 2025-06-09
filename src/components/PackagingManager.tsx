@@ -8,10 +8,8 @@ import { formatCurrency } from '@/utils/currency';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Package, Plus, Edit, Trash2, Box, Tag, Droplet, Pipette, Archive, Layers } from 'lucide-react';
 
 interface PackagingManagerProps {

@@ -1,18 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion } from 'framer-motion';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Calculator, TrendingUp, DollarSign, Percent, ChefHat, Trash2, ListChecks, Box, Edit, Download } from 'lucide-react';
+import { Calculator, Trash2, ListChecks, Edit } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSupabase } from '@/contexts/SupabaseProvider';
 import { useToast } from '@/components/ui/use-toast';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { formatCurrency, getCurrencySymbol } from '@/utils/currency';
-import { exportPricingHistoryToExcel } from '@/utils/export';
 import ExportButton from '@/components/ExportButton';
 
 const LOCAL_STORAGE_KEY = 'pricingCalculatorHistory';
@@ -69,17 +68,7 @@ export function PricingCalculator({ hideHeader = false, onAddPrice }: PricingCal
   const { toast } = useToast();
   const { currency } = useCurrency();
 
-  useEffect(() => {
-    fetchRecipes();
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && !onAddPrice) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(calculationHistory));
-    }
-  }, [calculationHistory, onAddPrice]);
-
-  const fetchRecipes = async () => {
+  const fetchRecipes = useCallback(async () => {
     try {
       if (supabase) {
         const { data: { user } } = await supabase.auth.getUser();
@@ -106,7 +95,17 @@ export function PricingCalculator({ hideHeader = false, onAddPrice }: PricingCal
         variant: 'destructive',
       });
     }
-  };
+  }, [supabase, toast]);
+
+  useEffect(() => {
+    fetchRecipes();
+  }, [fetchRecipes]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && !onAddPrice) {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(calculationHistory));
+    }
+  }, [calculationHistory, onAddPrice]);
 
   const handleRecipeChange = (recipeId: string) => {
     setSelectedRecipeId(recipeId);

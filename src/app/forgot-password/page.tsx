@@ -55,7 +55,7 @@ export default function ForgotPasswordPage() {
               Check your email
             </h2>
             <p className="text-gray-600 mb-6">
-              We've sent you an email with instructions to reset your password.
+              We&apos;ve sent you an email with instructions to reset your password.
               Please check your inbox and spam folder.
             </p>
             <Button
@@ -91,7 +91,9 @@ export default function ForgotPasswordPage() {
           <h1 className="text-3xl font-bold mt-4 bg-gradient-to-r from-purple-600 via-pink-600 to-yellow-600 bg-clip-text text-transparent">
             Reset Your Password
           </h1>
-          <p className="text-gray-600 mt-2">Enter your email to receive reset instructions</p>
+          <p className="text-sm text-gray-600 mb-6">
+            We&apos;ll send you a link to reset your password
+          </p>
         </div>
 
         <Card className="p-6 bg-white/90 backdrop-blur-sm shadow-xl border-purple-100">

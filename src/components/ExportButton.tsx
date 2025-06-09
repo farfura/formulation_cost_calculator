@@ -1,14 +1,16 @@
 'use client';
 
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Recipe, RawMaterial, PriceBreakdown } from '@/types';
 import { exportToCSV, exportToExcel, exportMultipleRecipesToExcel, exportRawMaterialsToExcel, exportPricingHistoryToExcel } from '@/utils/export';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Download, FileSpreadsheet, FileText, Sparkles, Package, Database } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, Sparkles, Package, Database, FileDown } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { Badge } from '@/components/ui/badge';
 
 interface ExportButtonProps {
   recipe?: Recipe;

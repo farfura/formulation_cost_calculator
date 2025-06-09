@@ -1,14 +1,14 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
+import { motion } from 'framer-motion';
 import { RawMaterial } from '@/types';
-import { formatWeight } from '@/utils/conversions';
 import { formatCurrency } from '@/utils/currency';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Edit2, Trash2, Package, DollarSign, Scale, Calculator, Sparkles } from 'lucide-react';
+import { Edit, Trash2, Package } from 'lucide-react';
 
 interface RawMaterialListProps {
   materials: RawMaterial[];
@@ -188,7 +188,7 @@ export default function RawMaterialList({ materials, onEdit, onDelete }: RawMate
                           size="icon"
                           className="h-8 w-8 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-100"
                         >
-                          <Edit2 className="h-4 w-4" />
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           onClick={() => onDelete(material.id)}
