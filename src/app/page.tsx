@@ -3,19 +3,16 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import { RawMaterial, Recipe, PackagingItem } from '@/types';
+import { RawMaterial, Recipe } from '@/types';
 import { 
   getRawMaterialsFromSupabase as getRawMaterialsFromDB, 
   saveRawMaterialToDB, 
   deleteRawMaterialFromDB,
   getRecipesFromSupabase as getRecipesFromDB,
   saveRecipeToDB,
-  deleteRecipeFromDB,
-  getPackagingItemsFromSupabase as getPackagingItemsFromDB,
-  savePackagingItemToDB,
-  deletePackagingItemFromDB
+  deleteRecipeFromDB
 } from '@/utils/db-supabase';
-import { exportToExcel, exportRawMaterialsToExcel } from '@/utils/export';
+import { exportToExcel } from '@/utils/export';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
@@ -27,13 +24,11 @@ import RecipeForm from '@/components/RecipeForm';
 import RecipeList from '@/components/RecipeList';
 import ExportButton from '@/components/ExportButton';
 import CurrencySelector from '@/components/CurrencySelector';
-import PackagingManager from '@/components/PackagingManager';
 import LabelGenerator from '@/components/LabelGenerator';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calculator, Package, ChefHat, Info, ArrowRight, CheckCircle, Sparkles, Heart, Star, HelpCircle, Target, Lightbulb, Plus, TrendingUp, Beaker, Palette, Download, BarChart3, Layers, Zap, Tag, LogOut } from 'lucide-react';
-import { RecipeVersioning } from '@/components/RecipeVersioning';
+import { Calculator, Package, ChefHat, Sparkles, Heart, HelpCircle, Lightbulb, Plus, TrendingUp, Beaker, BarChart3, Layers, Zap, Tag, LogOut } from 'lucide-react';
 import { InventoryManager } from '@/components/InventoryManager';
 import { PricingCalculator } from '@/components/PricingCalculator';
 
@@ -44,7 +39,6 @@ export default function Home() {
   const { toast } = useToast();
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [packaging, setPackaging] = useState<PackagingItem[]>([]);
   const [editingMaterial, setEditingMaterial] = useState<RawMaterial | undefined>();
   const [editingRecipe, setEditingRecipe] = useState<Recipe | undefined>();
   const [showMaterialForm, setShowMaterialForm] = useState(false);
@@ -53,26 +47,6 @@ export default function Home() {
   const [showSuccessMessage, setShowSuccessMessage] = useState<string>('');
   const [selectedRecipeForLabel, setSelectedRecipeForLabel] = useState<Recipe | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string>('');
-
-  // Remove unused functions and state
-  const loadRecipeData = async (recipeId: string) => {
-    try {
-      const recipe = recipes.find(r => r.id === recipeId);
-      if (recipe) {
-        // Update recipe data as needed
-        const updatedRecipes = recipes.map(r => r.id === recipe.id ? recipe : r);
-        setRecipes(updatedRecipes);
-      }
-    } catch (error) {
-      console.error('Error loading recipe data:', error);
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load recipe data",
-      });
-    }
-  };
 
   // Check authentication
   useEffect(() => {
@@ -89,7 +63,7 @@ export default function Home() {
         title: "👋 See you soon!",
         description: "You've been successfully logged out.",
       });
-    } catch (error) {
+    } catch {
       toast({
         variant: "destructive",
         title: "Error",
@@ -104,24 +78,26 @@ export default function Home() {
       console.log('Starting to load data...');
       setLoading(true);
       try {
-        const [materialsData, recipesData, packagingData] = await Promise.all([
+        const [materialsData, recipesData] = await Promise.all([
           getRawMaterialsFromDB(),
-          getRecipesFromDB(),
-          getPackagingItemsFromDB()
+          getRecipesFromDB()
         ]);
         console.log('Loaded recipes:', recipesData);
         setMaterials(materialsData);
         setRecipes(recipesData);
-        setPackaging(packagingData);
       } catch (err) {
         console.error('Error loading data:', err);
-        setError('Failed to load data from database');
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load data from database",
+        });
       } finally {
         setLoading(false);
       }
     };
     loadData();
-  }, []);
+  }, [toast]);
 
   // Show success message temporarily
   useEffect(() => {
@@ -134,7 +110,6 @@ export default function Home() {
   // Raw Materials Management
   const handleSaveMaterial = async (material: RawMaterial) => {
     setLoading(true);
-    setError(''); // Clear any previous errors
     try {
       console.log('Attempting to save material:', material.name);
       const savedMaterial = await saveRawMaterialToDB(material);
@@ -153,7 +128,11 @@ export default function Home() {
     } catch (err) {
       console.error('Error saving material:', err);
       const errorMessage = err instanceof Error ? err.message : 'Failed to save material';
-      setError(`Failed to save material: ${errorMessage}`);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: `Failed to save material: ${errorMessage}`,
+      });
       // Don't close the form on error so user can try again
     } finally {
       setLoading(false);
@@ -170,7 +149,11 @@ export default function Home() {
       setShowSuccessMessage(`<span className="text-2xl">🗑️</span> "${materialName}" removed from your collection`);
     } catch (err) {
       console.error('Error deleting material:', err);
-      setError('Failed to delete material');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete material",
+      });
     } finally {
       setLoading(false);
     }
@@ -205,7 +188,11 @@ export default function Home() {
       setShowRecipeForm(false);
     } catch (err) {
       console.error('Error saving recipe:', err);
-      setError('Failed to save recipe');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save recipe",
+      });
     } finally {
       setLoading(false);
     }
@@ -221,7 +208,11 @@ export default function Home() {
       setShowSuccessMessage(`<span className="text-2xl">🗑️</span> Recipe "${recipeName}" deleted`);
     } catch (err) {
       console.error('Error deleting recipe:', err);
-      setError('Failed to delete recipe');
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete recipe",
+      });
     } finally {
       setLoading(false);
     }
@@ -242,33 +233,9 @@ export default function Home() {
     setShowSuccessMessage(`<span className="text-2xl">📊</span> Recipe "${recipe.name}" exported successfully!`);
   };
 
-  const handleUpdateRecipe = async (updatedRecipe: Recipe) => {
-    setLoading(true);
-    try {
-      const savedRecipe = await saveRecipeToDB(updatedRecipe);
-      setRecipes(recipes.map(recipe => 
-        recipe.id === updatedRecipe.id ? savedRecipe : recipe
-      ));
-    } catch (err) {
-      console.error('Error updating recipe:', err);
-      setError('Failed to update recipe');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Calculate statistics
   const totalInvestment = materials.reduce((sum, m) => sum + m.totalCost, 0);
-  const avgCostPerGram = materials.length > 0 ? materials.reduce((sum, m) => sum + m.costPerGram, 0) / materials.length : 0;
-  const totalWeight = materials.reduce((sum, m) => {
-    let grams = m.totalWeight;
-    if (m.weightUnit === 'kg') grams *= 1000;
-    if (m.weightUnit === 'oz') grams *= 28.35;
-    if (m.weightUnit === 'lb') grams *= 453.6;
-    return sum + grams;
-  }, 0);
 
-  const totalRecipeCosts = recipes.reduce((sum, r) => sum + r.totalCost, 0);
   const totalFormulated = recipes.reduce((sum, r) => sum + r.ingredients.reduce((iSum, i) => iSum + i.amountInGrams, 0), 0);
 
   const containerVariants = {
@@ -299,26 +266,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-yellow-50 via-purple-50 to-pink-50 relative overflow-hidden">
-      {/* Error Message */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -50, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -50, scale: 0.95 }}
-            className="fixed top-4 right-4 z-50 bg-red-500 text-white px-6 py-3 rounded-xl shadow-2xl"
-          >
-            {error}
-            <button
-              onClick={() => setError('')}
-              className="ml-2 font-bold"
-            >
-              ×
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Loading Overlay */}
       {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -515,7 +462,7 @@ export default function Home() {
               return (
                 <motion.button
                   key={item.id}
-                  onClick={() => setActiveSection(item.id as any)}
+                  onClick={() => setActiveSection(item.id as 'overview' | 'materials' | 'recipes' | 'labels' | 'analytics' | 'inventory' | 'pricing')}
                   className={`flex items-center gap-2 px-6 py-4 text-sm font-medium transition-all duration-300 border-b-3 ${
                     isActive
                       ? `border-opacity-60 ${item.text} bg-gradient-to-r ${item.bg} shadow-lg border-current`
@@ -958,8 +905,6 @@ export default function Home() {
                         onEdit={handleEditRecipe}
                         onDelete={handleDeleteRecipe}
                         onExport={handleExportRecipe}
-                        onUpdateRecipe={handleUpdateRecipe}
-                        showHeader={false}
                       />
                     )}
                     </div>

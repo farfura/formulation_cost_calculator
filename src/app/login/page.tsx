@@ -126,12 +126,12 @@ export default function LoginPage() {
             </Button>
 
             <div className="mt-4 text-center space-y-2">
-              <Link
-                href="/signup"
-                className="text-sm text-purple-600 hover:text-purple-700 block"
-              >
-                Don't have an account? Sign up
-              </Link>
+              <p className="text-center text-sm text-gray-600">
+                Don&apos;t have an account?{' '}
+                <Button variant="link" className="p-0 h-auto text-purple-600 hover:text-purple-700" onClick={() => router.push('/signup')}>
+                  Sign up
+                </Button>
+              </p>
               <Link
                 href="/forgot-password"
                 className="text-sm text-gray-600 hover:text-gray-700 block"

@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Calculator, ArrowRight } from 'lucide-react';
-import Link from 'next/link';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -70,7 +69,7 @@ export default function SignUpPage() {
               Check your email
             </h2>
             <p className="text-gray-600 mb-6">
-              We've sent you an email with a link to confirm your account.
+              We&apos;ve sent you an email with a link to confirm your account.
               Please check your inbox and spam folder.
             </p>
             <Button
@@ -175,12 +174,12 @@ export default function SignUpPage() {
             </Button>
 
             <div className="mt-4 text-center">
-              <Link
-                href="/login"
-                className="text-sm text-purple-600 hover:text-purple-700"
-              >
-                Already have an account? Sign in
-              </Link>
+              <p className="text-center text-sm text-gray-600">
+                Already have an account?{' '}
+                <Button variant="link" className="p-0 h-auto text-purple-600 hover:text-purple-700" onClick={() => router.push('/login')}>
+                  Sign in
+                </Button>
+              </p>
             </div>
           </form>
         </Card>

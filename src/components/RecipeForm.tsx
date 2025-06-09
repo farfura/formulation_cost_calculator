@@ -8,8 +8,9 @@ import { formatCurrency } from '@/utils/currency';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Minus, ChefHat, Sparkles, Beaker, Target, Zap, Heart, Star, Calculator } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Plus, Minus, ChefHat, Sparkles, Beaker, Target, Zap, Heart, Star, Calculator, Trash2 } from 'lucide-react';
 
 interface RecipeFormProps {
   recipe?: Recipe;

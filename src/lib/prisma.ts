@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import type { Prisma } from '@prisma/client'
 
 declare global {
-  var prisma: PrismaClient | undefined
+  var prisma: any | undefined
 }
 
 type RawMaterialPayload = {
@@ -92,7 +92,7 @@ const prismaClientSingleton = () => {
   });
 };
 
-export const prisma = globalThis.prisma ?? prismaClientSingleton();
+const prisma = globalThis.prisma ?? prismaClientSingleton();
 
 if (process.env.NODE_ENV !== 'production') {
   globalThis.prisma = prisma;
@@ -101,4 +101,6 @@ if (process.env.NODE_ENV !== 'production') {
 // Ensure the prisma client is properly closed when the Node.js process exits
 process.on('beforeExit', async () => {
   await prisma.$disconnect();
-}); 
+});
+
+export { prisma }; 

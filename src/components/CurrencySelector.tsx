@@ -1,11 +1,12 @@
 'use client';
 
+import React from 'react';
 import { motion } from 'framer-motion';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { getCurrencyOptions, getCurrencySymbol } from '@/utils/currency';
+import { getCurrencyOptions } from '@/utils/currency';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { DollarSign, Globe } from 'lucide-react';
+import { Globe } from 'lucide-react';
 import { Currency } from '@/types';
 
 interface CurrencySelectorProps {

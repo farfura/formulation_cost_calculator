@@ -1,17 +1,17 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
+import React from 'react';
 import { Recipe, RawMaterial } from '@/types';
-import { formatWeight } from '@/utils/conversions';
+import { Button } from '@/components/ui/button';
 import { formatCurrency } from '@/utils/currency';
 import { useCurrency } from '@/contexts/CurrencyContext';
+import { Edit, Trash2, Download } from 'lucide-react';
+import { formatWeight } from '@/utils/conversions';
 import { getTotalRecipeWeight, calculateIngredientPercentages } from '@/utils/scaling';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import RecipeScaling from './RecipeScaling';
-import { Edit2, Trash2, ChefHat, Download, Scale, Sparkles, DollarSign, Beaker, Palette, Star, Heart, Zap, Target, Layers } from 'lucide-react';
 import ExportButton from '@/components/ExportButton';
 
 interface RecipeListProps {
@@ -20,11 +20,9 @@ interface RecipeListProps {
   onEdit: (recipe: Recipe) => void;
   onDelete: (id: string) => void;
   onExport: (recipe: Recipe) => void;
-  onUpdateRecipe?: (recipe: Recipe) => void;
-  showHeader?: boolean;
 }
 
-export default function RecipeList({ recipes, materials, onEdit, onDelete, onExport, onUpdateRecipe, showHeader = true }: RecipeListProps) {
+export default function RecipeList({ recipes, materials, onEdit, onDelete, onExport }: RecipeListProps) {
   const { currency } = useCurrency();
 
   console.log('Materials:', materials);
@@ -73,7 +71,7 @@ export default function RecipeList({ recipes, materials, onEdit, onDelete, onExp
                   <Download className="w-5 h-5" />
                 </Button>
                 <Button onClick={() => onEdit(recipe)} variant="outline" size="icon" title="Edit" className="border-pink-400 text-pink-600 hover:bg-pink-50">
-                  <Edit2 className="w-5 h-5" />
+                  <Edit className="w-5 h-5" />
                 </Button>
                 <Button onClick={() => { if (confirm(`Delete recipe \"${recipe.name}\"?`)) onDelete(recipe.id); }} variant="outline" size="icon" title="Delete" className="border-purple-400 text-purple-600 hover:bg-purple-50">
                   <Trash2 className="w-5 h-5" />
