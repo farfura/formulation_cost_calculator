@@ -1,394 +1,185 @@
 import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Download, Plus, Search } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { Download, Edit, Trash2 } from 'lucide-react';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { useSupabase } from '@/contexts/SupabaseProvider';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import * as XLSX from 'xlsx';
+import { useToast } from '@/components/ui/use-toast';
+import { PricingCalculator } from './PricingCalculator';
 
-interface PricingItem {
-  id: string;
-  product_name: string;
-  batch_size: number;
-  total_cost: number;
-  cost_per_unit: number;
-  selling_price_per_unit: number;
-  profit_per_unit: number;
-  notes: string;
-  created_at?: string;
+interface PriceRow {
+  id?: string;
+  recipeName: string;
+  actualCost: number;
+  packagingCost: number;
+  profitMargin: number;
+  finalPrice: number;
 }
 
-export const PricingManager: React.FC = () => {
-  const [pricing, setPricing] = useState<PricingItem[]>([]);
-  const [newItem, setNewItem] = useState<Omit<PricingItem, 'id' | 'created_at'>>({
-    product_name: '',
-    batch_size: 0,
-    total_cost: 0,
-    cost_per_unit: 0,
-    selling_price_per_unit: 0,
-    profit_per_unit: 0,
-    notes: ''
-  });
-  const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+export function PricingManager() {
+  const [rows, setRows] = useState<PriceRow[]>([]);
   const { supabase } = useSupabase();
+  const { toast } = useToast();
 
+  // Load existing pricing rows when component mounts
   useEffect(() => {
-    loadPricing();
+    loadPricingRows();
   }, []);
 
-  const loadPricing = async () => {
+  // Load pricing rows from the database
+  const loadPricingRows = async () => {
     try {
-      setLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
       const { data, error } = await supabase
         .from('pricing')
         .select('*')
+        .eq('user_id', user.id)
         .order('created_at', { ascending: false });
-      if (error) {
-        console.error('Error loading pricing:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load pricing data"
-        });
-        return;
-      }
-      setPricing(data || []);
-    } catch (error) {
-      console.error('Error loading pricing:', error);
+
+      if (error) throw error;
+
+      const formattedRows = (data || []).map((row: any) => ({
+        id: row.id,
+        recipeName: row.product_name,
+        actualCost: Number(row.total_cost) - Number(row.packaging_cost || 0),
+        packagingCost: Number(row.packaging_cost || 0),
+        profitMargin: Number(row.profit_margin || 0),
+        finalPrice: Number(row.selling_price_per_unit || row.final_price || 0),
+      }));
+
+      setRows(formattedRows);
+    } catch (error: any) {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load pricing data"
+        title: 'Error loading pricing data',
+        description: error.message || 'Failed to load pricing data',
+        variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
     }
   };
 
-  const handleAddItem = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  // Handle adding a new price calculation
+  const handleAddPrice = async (priceData: PriceRow) => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not authenticated');
+
       const { data, error } = await supabase
         .from('pricing')
-        .insert([{
-          ...newItem,
-          created_at: new Date().toISOString(),
-        }])
+        .insert([
+          {
+            product_name: priceData.recipeName,
+            total_cost: priceData.actualCost + priceData.packagingCost,
+            packaging_cost: priceData.packagingCost,
+            profit_margin: priceData.profitMargin,
+            selling_price_per_unit: priceData.finalPrice,
+            profit_per_unit: priceData.finalPrice - (priceData.actualCost + priceData.packagingCost),
+            user_id: user.id,
+            created_at: new Date().toISOString(),
+          },
+        ])
         .select()
         .single();
-      if (error) {
-        console.error('Error adding item:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to add pricing record"
-        });
-        return;
-      }
-      setPricing([data, ...pricing]);
-      setNewItem({
-        product_name: '',
-        batch_size: 0,
-        total_cost: 0,
-        cost_per_unit: 0,
-        selling_price_per_unit: 0,
-        profit_per_unit: 0,
-        notes: ''
-      });
+
+      if (error) throw error;
+
+      // Update the local state with the new row
+      setRows(prevRows => [{
+        id: data.id,
+        recipeName: priceData.recipeName,
+        actualCost: priceData.actualCost,
+        packagingCost: priceData.packagingCost,
+        profitMargin: priceData.profitMargin,
+        finalPrice: priceData.finalPrice,
+      }, ...prevRows]);
+
       toast({
-        title: "✨ Success",
-        description: "Pricing record added"
+        title: 'Success',
+        description: 'Price calculation added successfully',
       });
-    } catch (error) {
-      console.error('Error adding item:', error);
+    } catch (error: any) {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to add pricing record"
+        title: 'Error adding price',
+        description: error.message || 'Failed to add price calculation',
+        variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
+      throw error; // Re-throw to be handled by the calculator component
     }
   };
 
-  const handleDeleteItem = async (id: string) => {
+  // Handle deleting a price calculation
+  const handleDelete = async (id?: string) => {
+    if (!id) return;
     try {
-      setLoading(true);
       const { error } = await supabase
         .from('pricing')
         .delete()
         .eq('id', id);
-      if (error) {
-        console.error('Error deleting item:', error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to delete pricing record"
-        });
-        return;
-      }
-      setPricing(pricing.filter(item => item.id !== id));
+
+      if (error) throw error;
+      
+      setRows(prevRows => prevRows.filter(row => row.id !== id));
       toast({
-        title: "🗑️ Deleted",
-        description: "Pricing record removed"
+        title: 'Success',
+        description: 'Price calculation deleted successfully',
       });
-    } catch (error) {
-      console.error('Error deleting item:', error);
+    } catch (error: any) {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete pricing record"
+        title: 'Error deleting price',
+        description: error.message || 'Failed to delete price calculation',
+        variant: 'destructive',
       });
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const handleExportToExcel = () => {
-    const exportData = pricing.map(item => ({
-      'Product Name': item.product_name,
-      'Batch Size': item.batch_size,
-      'Total Cost': item.total_cost,
-      'Cost per Unit': item.cost_per_unit,
-      'Selling Price per Unit': item.selling_price_per_unit,
-      'Profit per Unit': item.profit_per_unit,
-      'Notes': item.notes,
-      'Created At': item.created_at ? new Date(item.created_at).toLocaleDateString() : ''
-    }));
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Pricing');
-    XLSX.writeFile(wb, 'pricing.xlsx');
-  };
-
-  const filteredPricing = pricing.filter(item =>
-    item.product_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Calculate derived values when batch size or total cost changes
-  const handleBatchSizeOrTotalCostChange = (
-    field: 'batch_size' | 'total_cost',
-    value: string
-  ) => {
-    const numValue = value === '' ? 0 : parseFloat(value);
-    const updates = { ...newItem, [field]: numValue };
-
-    // Calculate cost per unit if both batch size and total cost are available
-    if (updates.batch_size > 0) {
-      updates.cost_per_unit = Number((updates.total_cost / updates.batch_size).toFixed(2));
-    } else {
-      updates.cost_per_unit = 0;
-    }
-
-    // Calculate profit per unit if selling price is available
-    if (updates.selling_price_per_unit > 0) {
-      updates.profit_per_unit = Number((updates.selling_price_per_unit - updates.cost_per_unit).toFixed(2));
-    } else {
-      updates.profit_per_unit = 0;
-    }
-
-    setNewItem(updates);
-  };
-
-  // Handle selling price changes
-  const handleSellingPriceChange = (value: string) => {
-    const numValue = value === '' ? 0 : parseFloat(value);
-    const updates = {
-      ...newItem,
-      selling_price_per_unit: numValue,
-      profit_per_unit: Number((numValue - newItem.cost_per_unit).toFixed(2))
-    };
-    setNewItem(updates);
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold bg-gradient-to-r from-pink-600 to-yellow-600 bg-clip-text text-transparent">
-            💰 Pricing Management
-          </h2>
-          <p className="text-gray-600">Track your product pricing and profitability</p>
-        </div>
-        {pricing.length > 0 && (
-          <Button
-            onClick={handleExportToExcel}
-            className="bg-green-600 hover:bg-green-700"
-            disabled={loading}
-          >
-            <Download className="w-4 h-4 mr-2" />
-            Export to Excel
-          </Button>
-        )}
-      </div>
-
-      <Card className="bg-white/95 backdrop-blur-sm border-yellow-200/60 shadow-xl">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            Add New Pricing Record
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleAddItem} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Product Name</Label>
-                <Input
-                  value={newItem.product_name}
-                  onChange={(e) => setNewItem({ ...newItem, product_name: e.target.value })}
-                  placeholder="Enter product name"
-                  required
-                  disabled={loading}
-                />
-              </div>
-              <div>
-                <Label>Batch Size</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={newItem.batch_size || ''}
-                  onChange={(e) => handleBatchSizeOrTotalCostChange('batch_size', e.target.value)}
-                  placeholder="0"
-                  required
-                  disabled={loading}
-                />
-              </div>
-              <div>
-                <Label>Total Cost</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={newItem.total_cost || ''}
-                  onChange={(e) => handleBatchSizeOrTotalCostChange('total_cost', e.target.value)}
-                  placeholder="0"
-                  required
-                  disabled={loading}
-                />
-              </div>
-              <div>
-                <Label>Cost per Unit (Calculated)</Label>
-                <Input
-                  type="number"
-                  value={newItem.cost_per_unit || ''}
-                  readOnly
-                  disabled
-                  className="bg-gray-50"
-                />
-              </div>
-              <div>
-                <Label>Selling Price per Unit</Label>
-                <Input
-                  type="number"
-                  min="0"
-                  step="any"
-                  value={newItem.selling_price_per_unit || ''}
-                  onChange={(e) => handleSellingPriceChange(e.target.value)}
-                  placeholder="0"
-                  required
-                  disabled={loading}
-                />
-              </div>
-              <div>
-                <Label>Profit per Unit (Calculated)</Label>
-                <Input
-                  type="number"
-                  value={newItem.profit_per_unit || ''}
-                  readOnly
-                  disabled
-                  className="bg-gray-50"
-                />
-              </div>
-            </div>
-            <div>
-              <Label>Notes</Label>
-              <Input
-                value={newItem.notes}
-                onChange={(e) => setNewItem({ ...newItem, notes: e.target.value })}
-                placeholder="Add any notes about this product"
-                disabled={loading}
-              />
-            </div>
-            <Button 
-              type="submit" 
-              className="w-full bg-gradient-to-r from-pink-500 to-yellow-500"
-              disabled={loading}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Pricing Record
-            </Button>
-          </form>
+    <div className="space-y-8">
+      <PricingCalculator onAddPrice={handleAddPrice} />
+      <Card className="bg-white/95 backdrop-blur-sm border-0 shadow-xl">
+        <CardContent className="p-6">
+          <div className="rounded-2xl border border-yellow-200 bg-yellow-50/30 overflow-hidden shadow-md">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gradient-to-r from-pink-100 to-yellow-100 hover:bg-none">
+                  <TableHead className="text-pink-700 font-bold">Recipe Name</TableHead>
+                  <TableHead className="text-pink-700 font-bold text-right">Actual Cost</TableHead>
+                  <TableHead className="text-pink-700 font-bold text-right">Packaging Cost</TableHead>
+                  <TableHead className="text-pink-700 font-bold text-right">Profit Margin (%)</TableHead>
+                  <TableHead className="text-pink-700 font-bold text-right">Final Price</TableHead>
+                  <TableHead className="text-pink-700 font-bold">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((row, i) => (
+                  <TableRow key={row.id || i} className={i % 2 === 0 ? 'bg-white hover:bg-gray-50/50' : 'bg-yellow-50/50 hover:bg-yellow-100/50'}>
+                    <TableCell className="font-semibold text-pink-900">{row.recipeName}</TableCell>
+                    <TableCell className="text-right">${row.actualCost.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">${row.packagingCost.toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{row.profitMargin}%</TableCell>
+                    <TableCell className="text-right">${row.finalPrice.toFixed(2)}</TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline" className="border-pink-200 text-pink-600 bg-white rounded-full px-3 py-1 hover:bg-pink-50 shadow-sm" disabled>
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="destructive" 
+                          className="bg-pink-200 text-pink-900 rounded-full px-4 py-1 hover:bg-pink-400 border-none shadow-sm"
+                          onClick={() => handleDelete(row.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
-
-      {pricing.length > 0 && (
-        <Card className="bg-white/95 backdrop-blur-sm border-purple-200/60 shadow-xl">
-          <CardContent className="p-6">
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Product Name</TableHead>
-                    <TableHead>Batch Size</TableHead>
-                    <TableHead>Total Cost</TableHead>
-                    <TableHead>Cost per Unit</TableHead>
-                    <TableHead>Selling Price per Unit</TableHead>
-                    <TableHead>Profit per Unit</TableHead>
-                    <TableHead>Notes</TableHead>
-                    <TableHead>Created At</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPricing.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.product_name}</TableCell>
-                      <TableCell>{item.batch_size}</TableCell>
-                      <TableCell>{item.total_cost}</TableCell>
-                      <TableCell>{item.cost_per_unit}</TableCell>
-                      <TableCell>{item.selling_price_per_unit}</TableCell>
-                      <TableCell>{item.profit_per_unit}</TableCell>
-                      <TableCell>{item.notes}</TableCell>
-                      <TableCell>{item.created_at ? new Date(item.created_at).toLocaleDateString() : ''}</TableCell>
-                      <TableCell>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleDeleteItem(item.id)}
-                          disabled={loading}
-                        >
-                          Delete
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {pricing.length === 0 && (
-        <Card className="bg-gray-50 text-center p-8">
-          <h3 className="text-lg font-semibold text-gray-600 mb-2">No pricing records found</h3>
-          <p className="text-gray-500">Add your first pricing record to start tracking!</p>
-        </Card>
-      )}
     </div>
   );
-}; 
+} 

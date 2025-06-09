@@ -1,8 +1,8 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { Recipe, RawMaterial } from '@/types';
-import { exportToCSV, exportToExcel, exportMultipleRecipesToExcel, exportRawMaterialsToExcel } from '@/utils/export';
+import { Recipe, RawMaterial, PriceBreakdown } from '@/types';
+import { exportToCSV, exportToExcel, exportMultipleRecipesToExcel, exportRawMaterialsToExcel, exportPricingHistoryToExcel } from '@/utils/export';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Download, FileSpreadsheet, FileText, Sparkles, Package, Database } from 'lucide-react';
@@ -14,8 +14,9 @@ interface ExportButtonProps {
   recipe?: Recipe;
   recipes?: Recipe[];
   materials?: RawMaterial[];
+  pricingHistory?: PriceBreakdown[];
   className?: string;
-  variant?: 'recipe' | 'recipes' | 'materials' | 'all';
+  variant?: 'recipe' | 'recipes' | 'materials' | 'all' | 'pricing';
   label?: string;
   iconPosition?: 'left' | 'right';
 }
@@ -23,10 +24,11 @@ interface ExportButtonProps {
 export default function ExportButton({ 
   recipe, 
   recipes, 
-  materials, 
+  materials,
+  pricingHistory,
   className = '', 
-  variant = 'recipe',
-  label,
+  variant = 'materials',
+  label = 'Export Materials',
   iconPosition = 'left',
 }: ExportButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -49,7 +51,6 @@ export default function ExportButton({
     }
   }, [isOpen]);
 
-  // Calculate dropdown position when button is clicked
   const handleToggleDropdown = (e: React.MouseEvent) => {
     e.stopPropagation();
     
@@ -92,6 +93,38 @@ export default function ExportButton({
     setIsOpen(false);
   };
 
+  const handleExportPricingHistoryExcel = () => {
+    if (pricingHistory && pricingHistory.length > 0) {
+      exportPricingHistoryToExcel(pricingHistory, currency);
+    }
+    setIsOpen(false);
+  };
+
+  const handleClick = () => {
+    switch (variant) {
+      case 'recipe':
+        if (recipe) {
+          exportToExcel(recipe, currency, materials);
+        }
+        break;
+      case 'recipes':
+        if (recipes && recipes.length > 0) {
+          exportMultipleRecipesToExcel(recipes, materials, currency);
+        }
+        break;
+      case 'materials':
+        if (materials && materials.length > 0) {
+          exportRawMaterialsToExcel(materials, currency);
+        }
+        break;
+      case 'pricing':
+        if (pricingHistory && pricingHistory.length > 0) {
+          exportPricingHistoryToExcel(pricingHistory, currency);
+        }
+        break;
+    }
+  };
+
   // Single recipe export (with dropdown options)
   if (variant === 'recipe' && recipe) {
     return (
@@ -103,11 +136,12 @@ export default function ExportButton({
           <Button
             onClick={handleToggleDropdown}
             ref={buttonRef}
-            className="h-12 px-6 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-            size="lg"
+            className="h-[32px] w-[150px] px-3 bg-gradient-to-r from-green-100 to-green-200 text-green-700 border border-solid border-green-700 shadow-sm transition-all duration-300 text-sm font-medium rounded-[10px]"
           >
-            <Download className="w-5 h-5 mr-2" />
-            Export Recipe ✨
+            <div className="flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              <span>Export to Excel</span>
+            </div>
           </Button>
         </motion.div>
 
@@ -173,7 +207,6 @@ export default function ExportButton({
     );
   }
 
-  // Multiple recipes export
   if (variant === 'recipes' && recipes && recipes.length > 0) {
     return (
       <motion.div
@@ -183,12 +216,12 @@ export default function ExportButton({
       >
         <Button
           onClick={handleExportAllExcel}
-          className={className}
-          size="lg"
+          className="h-[32px] w-[150px] px-3 bg-gradient-to-r from-green-100 to-green-200 text-green-700 border border-solid border-green-700 shadow-sm transition-all duration-300 text-sm font-medium rounded-[10px]"
         >
-          {iconPosition === 'left' && <Download className="w-5 h-5 mr-2" />}
-          {label || 'Export All Recipes'}
-          {iconPosition === 'right' && <Download className="w-5 h-5 ml-2" />}
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4" />
+            <span>{label || 'Export All Recipes'}</span>
+          </div>
         </Button>
       </motion.div>
     );
@@ -204,33 +237,51 @@ export default function ExportButton({
       >
         <Button
           onClick={handleExportMaterialsExcel}
-          className="h-12 px-6 bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-          size="lg"
+          className="h-[36px] w-[180.97px] px-3 bg-gradient-to-r from-green-100 to-green-200 text-green-700 border border-solid border-green-700 shadow-sm text-sm font-medium rounded-[10px]"
         >
-          <motion.div
-            className="flex items-center gap-2"
-            animate={{ 
-              scale: [1, 1.05, 1],
-            }}
-            transition={{ 
-              duration: 2, 
-              repeat: Infinity, 
-              ease: "easeInOut" 
-            }}
-          >
-            <Package className="w-5 h-5" />
-            <span>Export Materials</span>
-            <Database className="w-4 h-4 animate-pulse" />
-          </motion.div>
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4" />
+            <span>{label || 'Export to Excel'}</span>
+          </div>
         </Button>
       </motion.div>
     );
   }
 
-  // All data export (both recipes and materials)
+  // Pricing history export
+  if (variant === 'pricing' && pricingHistory && pricingHistory.length > 0) {
+    return (
+      <motion.div
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+        className={className}
+      >
+        <Button
+          onClick={handleExportPricingHistoryExcel}
+          className="h-[32px] w-[150px] px-3 bg-gradient-to-r from-green-100 to-green-200 text-green-700 border border-solid border-green-700 shadow-sm  text-sm font-medium rounded-[10px]"
+        >
+          <div className="flex items-center gap-2">
+            <Package className="w-4 h-4" />
+            <span>{label || 'Export Pricing History'}</span>
+          </div>
+        </Button>
+      </motion.div>
+    );
+  }
+
   if (variant === 'all') {
     return null;
   }
 
-  return null;
+  return (
+    <Button
+      onClick={handleClick}
+      className="h-[32px] w-[150px] px-3 bg-gradient-to-r from-green-100 to-green-200 text-green-700 border border-solid border-green-700 shadow-sm  text-sm font-medium rounded-[10px]"
+    >
+      <div className="flex items-center gap-2">
+        <Package className="w-4 h-4" />
+        <span>{label}</span>
+      </div>
+    </Button>
+  );
 } 

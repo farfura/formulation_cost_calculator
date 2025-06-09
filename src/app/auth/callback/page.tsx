@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Calculator } from 'lucide-react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -19,13 +19,15 @@ export default function AuthCallbackPage() {
       if (code) {
         try {
           const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) throw error;
+          if (error) {
+            console.error('Error exchanging code for session:', error);
+          }
         } catch (error) {
-          console.error('Error exchanging code for session:', error);
+          console.error('Critical error exchanging code for session:', error);
         }
       }
-
       router.push(next);
+      router.refresh();
     };
 
     handleAuthCallback();

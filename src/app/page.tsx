@@ -5,16 +5,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { RawMaterial, Recipe, PackagingItem } from '@/types';
 import { 
-  getRawMaterialsFromDB, 
+  getRawMaterialsFromSupabase as getRawMaterialsFromDB, 
   saveRawMaterialToDB, 
   deleteRawMaterialFromDB,
-  getRecipesFromDB,
+  getRecipesFromSupabase as getRecipesFromDB,
   saveRecipeToDB,
   deleteRecipeFromDB,
-  getPackagingItemsFromDB,
+  getPackagingItemsFromSupabase as getPackagingItemsFromDB,
   savePackagingItemToDB,
   deletePackagingItemFromDB
-} from '@/utils/db';
+} from '@/utils/db-supabase';
 import { exportToExcel, exportRawMaterialsToExcel } from '@/utils/export';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -812,13 +812,11 @@ export default function Home() {
                       </Button>
                     </motion.div>
                     <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                      <Button
-                        onClick={() => exportRawMaterialsToExcel(materials, currency)}
-                        className="h-12 px-6 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
-                      >
-                        <Download className="w-5 h-5 mr-2" />
-                        Export to Excel
-                      </Button>
+                      <ExportButton
+                        materials={materials}
+                        variant="materials"
+                        label="Export to Excel"
+                      />
                     </motion.div>
                   </div>
                 </div>
@@ -1111,34 +1109,9 @@ export default function Home() {
 
           {/* Pricing Section */}
           {activeSection === 'pricing' && (
-            <motion.div
-              key="pricing"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              exit="hidden"
-              className="space-y-6"
-            >
-              <motion.div variants={itemVariants}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-3xl font-bold flex items-center gap-2">
-                      <span className="text-2xl">💰</span>
-                      <span className="bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
-                        Product Pricing
-                      </span>
-                    </h2>
-                    <p className="text-gray-600 flex items-center gap-1">
-                      Calculate your product costs and profit margins
-                    </p>
-                  </div>
-                </div>
-              </motion.div>
-
-              <motion.div variants={itemVariants}>
-                <PricingCalculator />
-              </motion.div>
-            </motion.div>
+            <div className="space-y-6">
+              <PricingCalculator hideHeader={false} />
+            </div>
           )}
         </AnimatePresence>
       </main>
@@ -1212,9 +1185,18 @@ export default function Home() {
               className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
             >
               <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-violet-50">
-                <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
-                  {editingRecipe ? (<><span className="text-2xl">🧪</span> Edit Recipe</>) : (<><span className="text-2xl">🧪</span> Create New Recipe</>)}
-                </h2>
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-violet-600 bg-clip-text text-transparent">
+                    {editingRecipe ? (<><span className="text-2xl">🧪</span> Edit Recipe</>) : (<><span className="text-2xl">🧪</span> Create New Recipe</>)}
+                  </h2>
+                  <Button
+                    onClick={handleCancelEditRecipe}
+                    variant="outline"
+                    className="text-gray-600 hover:text-gray-800 border border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                  >
+                    <span className="text-xl font-bold">✕</span>
+                  </Button>
+                </div>
               </div>
               <div className="p-6">
                 <RecipeForm

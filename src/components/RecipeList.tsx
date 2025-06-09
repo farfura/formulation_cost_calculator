@@ -47,9 +47,7 @@ export default function RecipeList({ recipes, materials, onEdit, onDelete, onExp
         <ExportButton
           recipes={recipes}
           variant="recipes"
-          className="w-52 hover:bg-primary/90 h-10 inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-gradient-to-r from-green-200 to-green-300 text-green-900 border-none shadow-none px-8 py-3"
           label="Export to Excel"
-          iconPosition="left"
         />
       </div>
       {recipes.map((recipe) => {

@@ -2,6 +2,7 @@ import * as XLSX from 'xlsx-js-style';
 import { Recipe, ExportData, RawMaterial, Currency } from '@/types';
 import { formatWeight } from './conversions';
 import { formatCurrency } from './currency';
+import { PriceBreakdown } from '@/components/PricingCalculator';
 
 /**
  * Convert recipe to export data format
@@ -619,6 +620,74 @@ export function exportRawMaterialsToExcel(materials: RawMaterial[], currency: Cu
 
   const timestamp = new Date().toISOString().split('T')[0];
   XLSX.writeFile(wb, `Raw_Materials_Inventory_${timestamp}.xlsx`);
+}
+
+/**
+ * Export pricing calculation history to Excel with beautiful pastel formatting
+ */
+export function exportPricingHistoryToExcel(history: PriceBreakdown[], currency: Currency = 'PKR'): void {
+  const wb = XLSX.utils.book_new();
+  const overviewData = [
+    ['💰 PRICING CALCULATION HISTORY', '', '', '', '', ''],
+    [''], // Empty row
+    ['Calculation Summary', '', '', '', '', ''],
+    ['Generated on:', new Date().toLocaleString(), '', '', '', ''],
+    ['Total Calculations:', history.length.toString(), '', '', '', ''],
+    [''], // Empty row
+    ['Recipe', 'Actual Cost', 'Packaging', 'Container', 'Margin (%)', 'Final Price']
+  ];
+
+  history.forEach(item => {
+    overviewData.push([
+      item.recipeName,
+      formatCurrency(item.actualCost || 0, currency),
+      formatCurrency(item.packagingCost || 0, currency),
+      formatCurrency(item.containerPrice || 0, currency),
+      `${item.profitMargin || 0}%`,
+      formatCurrency(item.finalPrice || 0, currency)
+    ]);
+  });
+
+  const ws = XLSX.utils.aoa_to_sheet(overviewData);
+  ws['!cols'] = [
+    { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 15 }
+  ];
+  ws['!rows'] = [
+    { hpt: 35 }, // Main header
+    { hpt: 22 }, // Empty row
+    { hpt: 28 }, // Section header
+    { hpt: 25 }, // Info row
+    { hpt: 25 }, // Info row
+    { hpt: 22 }, // Empty row
+    { hpt: 26 }, // Column headers
+    ...Array(history.length).fill({ hpt: 24 }) // Data rows
+  ];
+
+  // Apply pastel styles
+  applyCellStyle(ws, 'A1', styles.mainHeader);
+  applyCellStyle(ws, 'A3', styles.sectionHeader);
+  // Column headers
+  for (let col = 0; col < 6; col++) {
+    const cellRef = XLSX.utils.encode_cell({ r: 6, c: col });
+    applyCellStyle(ws, cellRef, styles.columnHeader);
+  }
+  // Data rows with alternating colors
+  for (let i = 0; i < history.length; i++) {
+    const row = 7 + i;
+    const isAlternateRow = i % 2 === 1;
+    for (let col = 0; col < 6; col++) {
+      const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+      if (col === 0) {
+        applyCellStyle(ws, cellRef, isAlternateRow ? styles.dataRowAlternate : styles.dataCell);
+      } else {
+        applyCellStyle(ws, cellRef, isAlternateRow ? styles.numberRowAlternate : styles.numberCell);
+      }
+    }
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Pricing History');
+  const timestamp = new Date().toISOString().split('T')[0];
+  XLSX.writeFile(wb, `Pricing_History_${timestamp}.xlsx`);
 }
 
 export { styles, applyCellStyle }; 

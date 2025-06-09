@@ -114,6 +114,10 @@ export default function RecipeForm({ recipe, materials, onSave, onCancel }: Reci
       numberOfUnits,
       costPerUnit,
       originalBatchSize: recipe?.originalBatchSize || batchSize || ingredients.reduce((sum, ing) => sum + ing.amountInGrams, 0),
+      packaging: recipe?.packaging || [],
+      totalPackagingCost: recipe?.totalPackagingCost || 0,
+      created_at: recipe?.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
     onSave(newRecipe);
