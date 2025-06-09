@@ -115,38 +115,92 @@ export default function RawMaterialList({ materials, onEdit, onDelete }: RawMate
                   <th className="px-4 py-3 text-left font-bold text-pink-700 text-base">Unit</th>
                   <th className="px-4 py-3 text-left font-bold text-pink-700 text-base">Cost/Gram</th>
                   <th className="px-4 py-3 text-left font-bold text-pink-700 text-base">Total Cost</th>
+                  <th className="px-4 py-3 text-left font-bold text-pink-700 text-base">Supplier</th>
+                  <th className="px-4 py-3 text-left font-bold text-pink-700 text-base">Last Purchase</th>
+                  <th className="px-4 py-3 text-left font-bold text-pink-700 text-base">Monthly Usage</th>
                   <th className="px-4 py-3 text-left font-bold text-pink-700 text-base">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {materials.map((m, i) => (
-                  <tr key={m.id} className={i % 2 === 0 ? 'bg-white' : 'bg-pink-50'}>
-                    <td className="px-4 py-2 font-medium text-pink-900">{m.name}</td>
-                    <td className="px-4 py-2 text-pink-800">{formatWeight(m.totalWeight, m.weightUnit)}</td>
-                    <td className="px-4 py-2 text-pink-800">{m.weightUnit}</td>
-                    <td className="px-4 py-2 text-pink-800">{formatCurrency(m.costPerGram, currency)}</td>
-                    <td className="px-4 py-2 text-pink-800">{formatCurrency(m.totalCost, currency)}</td>
-                    <td className="px-4 py-2">
-                      <div className="flex gap-2">
+                {materials.map((material, index) => (
+                  <motion.tr
+                    key={material.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                    className={`border-b border-pink-100 hover:bg-pink-50/50 transition-colors ${
+                      index % 2 === 0 ? 'bg-white' : 'bg-pink-50/30'
+                    }`}
+                  >
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-gray-900">{material.name}</span>
+                        {material.usageNotes && (
+                          <span className="text-xs text-gray-500 mt-1">{material.usageNotes}</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">{material.totalWeight}</td>
+                    <td className="px-4 py-3 text-gray-700">{material.weightUnit}</td>
+                    <td className="px-4 py-3 text-gray-700">{formatCurrency(material.costPerGram, currency)}</td>
+                    <td className="px-4 py-3 text-gray-700">{formatCurrency(material.totalCost, currency)}</td>
+                    <td className="px-4 py-3">
+                      {material.supplierName && (
+                        <div className="flex flex-col">
+                          <span className="text-gray-900">{material.supplierName}</span>
+                          {material.supplierContact && (
+                            <a 
+                              href={material.supplierContact.startsWith('http') ? material.supplierContact : `http://${material.supplierContact}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs text-blue-600 hover:text-blue-800 mt-1"
+                            >
+                              {material.supplierContact}
+                            </a>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      {material.lastPurchaseDate && (
+                        <div className="flex flex-col">
+                          <span className="text-gray-900">
+                            {new Date(material.lastPurchaseDate).toLocaleDateString()}
+                          </span>
+                          {material.purchaseNotes && (
+                            <span className="text-xs text-gray-500 mt-1">{material.purchaseNotes}</span>
+                          )}
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">
+                      {material.typicalMonthlyUsage ? (
+                        `${material.typicalMonthlyUsage} ${material.weightUnit}/month`
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
                         <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => onEdit(m)}
-                          className="border-pink-300 text-pink-600 hover:bg-pink-50"
+                          onClick={() => onEdit(material)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-yellow-600 hover:text-yellow-700 hover:bg-yellow-100"
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Edit2 className="h-4 w-4" />
                         </Button>
                         <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => onDelete(m.id)}
-                          className="bg-pink-200 text-pink-900 hover:bg-pink-400 border-none"
+                          onClick={() => onDelete(material.id)}
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-100"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </td>
-                  </tr>
+                  </motion.tr>
                 ))}
               </tbody>
             </table>

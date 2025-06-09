@@ -1,8 +1,9 @@
-import { supabase } from './supabase';
-import type { Recipe } from './supabase';
+import { createSupabaseServerClient } from './supabase/server';
+import type { Recipe } from '@/types';
 
 // Recipe Functions
 export async function createRecipe(recipe: Omit<Recipe, 'id' | 'created_at' | 'updated_at'>) {
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from('recipes')
     .insert([recipe])
@@ -14,6 +15,7 @@ export async function createRecipe(recipe: Omit<Recipe, 'id' | 'created_at' | 'u
 }
 
 export async function getRecipe(id: string) {
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from('recipes')
     .select('*')
@@ -25,6 +27,7 @@ export async function getRecipe(id: string) {
 }
 
 export async function getAllRecipes() {
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from('recipes')
     .select('*')
@@ -35,6 +38,7 @@ export async function getAllRecipes() {
 }
 
 export async function updateRecipe(id: string, updates: Partial<Recipe>) {
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
     .from('recipes')
     .update(updates)
@@ -47,6 +51,7 @@ export async function updateRecipe(id: string, updates: Partial<Recipe>) {
 }
 
 export async function deleteRecipe(id: string) {
+  const supabase = await createSupabaseServerClient();
   const { error } = await supabase
     .from('recipes')
     .delete()

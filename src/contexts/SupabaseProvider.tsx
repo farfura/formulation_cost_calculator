@@ -1,42 +1,25 @@
 "use client";
 
 import { createContext, useContext } from 'react';
-import { createClient, SupabaseClient, PostgrestError } from '@supabase/supabase-js';
+import { SupabaseClient, PostgrestError } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase/client';
 
 interface SupabaseContextType {
   supabase: SupabaseClient;
 }
 
-// Verify environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    `Missing Supabase environment variables. Check your .env.local file:\n` +
-    `NEXT_PUBLIC_SUPABASE_URL: ${!!supabaseUrl}\n` +
-    `NEXT_PUBLIC_SUPABASE_ANON_KEY: ${!!supabaseAnonKey}`
-  );
-}
-
-// Create a single instance of Supabase client
-const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    autoRefreshToken: true,
-    persistSession: true
-  }
-});
-
 // Test the connection
-Promise.resolve(
-  supabase
-    .from('pricing')
-    .select('count(*)', { count: 'exact', head: true })
-).then(() => {
-  console.log('Supabase connection test successful');
-}).catch((error: Error | PostgrestError) => {
-  console.error('Supabase connection test failed:', error.message);
-});
+const testConnection = async () => {
+  try {
+    await supabase.from('pricing').select('count(*)', { count: 'exact', head: true });
+    console.log('Supabase connection test successful');
+  } catch (error) {
+    console.error('Supabase connection test failed:', (error as Error).message);
+  }
+};
+
+// Run the test
+void testConnection();
 
 const SupabaseContext = createContext<SupabaseContextType>({ supabase });
 

@@ -1,4 +1,4 @@
-export type WeightUnit = 'g' | 'kg' | 'oz' | 'lb';
+export type WeightUnit = 'g' | 'kg' | 'ml' | 'l' | 'oz' | 'lb';
 
 export type Currency = 'USD' | 'PKR' | 'EUR' | 'GBP' | 'CAD' | 'AUD' | 'INR' | 'JPY' | 'CNY';
 
@@ -20,10 +20,18 @@ export interface RawMaterial {
   totalWeight: number;
   weightUnit: WeightUnit;
   costPerGram: number;
+  supplierName?: string;
+  supplierContact?: string;
+  lastPurchaseDate?: string;
+  purchaseNotes?: string;
+  usageNotes?: string;
+  typicalMonthlyUsage?: number;
   created_at: string;
   updated_at: string;
   // user_id?: string; // To be added later for user-specific data
 }
+
+export type PackagingType = 'container' | 'label' | 'cap' | 'pump' | 'box' | 'other';
 
 export interface PackagingItem {
   id: string;
@@ -31,7 +39,7 @@ export interface PackagingItem {
   cost: number;
   description?: string;
   supplier?: string;
-  category: 'container' | 'label' | 'cap' | 'pump' | 'box' | 'other';
+  category: PackagingType;
   created_at: string;
   updated_at: string;
 }
@@ -54,8 +62,8 @@ export interface Recipe {
   numberOfUnits?: number;
   costPerUnit?: number;
   originalBatchSize?: number;
-  packaging?: PackagingItem[];
-  totalPackagingCost?: number;
+  packaging: PackagingItem[];
+  totalPackagingCost: number;
   category?: string;
   description?: string;
   instructions?: string;
@@ -107,4 +115,14 @@ export interface LabelSettings {
     height: number;
     unit: 'mm' | 'cm' | 'in';
   };
+}
+
+export interface PriceBreakdown {
+  id: string;
+  recipeName: string;
+  actualCost: number;
+  packagingCost: number;
+  containerPrice: number;
+  profitMargin: number;
+  finalPrice: number;
 } 

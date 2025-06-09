@@ -65,7 +65,9 @@ export default function PackagingManager({ onSelect, selectedItems = [], showSel
       cost: parseFloat(formData.cost),
       description: formData.description,
       supplier: formData.supplier,
-      category: formData.category
+      category: formData.category,
+      created_at: editingItem?.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
     let updatedPackaging;

@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Edit2, DollarSign, Scale, AlertCircle, Sparkles, Info, Package } from 'lucide-react';
+import { Plus, Edit2, DollarSign, Scale, AlertCircle, Sparkles, Info, Package, Calendar, TrendingUp, FileText } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 interface RawMaterialFormProps {
   material?: RawMaterial;
@@ -19,10 +20,16 @@ interface RawMaterialFormProps {
 
 export default function RawMaterialForm({ material, onSave, onCancel }: RawMaterialFormProps) {
   const [formData, setFormData] = useState({
-    name: '',
-    totalCost: 0,
-    totalWeight: 0,
-    weightUnit: 'g' as WeightUnit,
+    name: material?.name || '',
+    totalCost: material?.totalCost || 0,
+    totalWeight: material?.totalWeight || 0,
+    weightUnit: material?.weightUnit || 'g',
+    supplierName: material?.supplierName || '',
+    supplierContact: material?.supplierContact || '',
+    lastPurchaseDate: material?.lastPurchaseDate ? new Date(material.lastPurchaseDate).toISOString().split('T')[0] : '',
+    purchaseNotes: material?.purchaseNotes || '',
+    usageNotes: material?.usageNotes || '',
+    typicalMonthlyUsage: material?.typicalMonthlyUsage || 0,
   });
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [showTooltip, setShowTooltip] = useState<string>('');
@@ -34,6 +41,12 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
         totalCost: material.totalCost,
         totalWeight: material.totalWeight,
         weightUnit: material.weightUnit,
+        supplierName: material.supplierName || '',
+        supplierContact: material.supplierContact || '',
+        lastPurchaseDate: material.lastPurchaseDate ? new Date(material.lastPurchaseDate).toISOString().split('T')[0] : '',
+        purchaseNotes: material.purchaseNotes || '',
+        usageNotes: material.usageNotes || '',
+        typicalMonthlyUsage: material.typicalMonthlyUsage || 0,
       });
     } else {
       setFormData({
@@ -41,6 +54,12 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
         totalCost: 0,
         totalWeight: 0,
         weightUnit: 'g',
+        supplierName: '',
+        supplierContact: '',
+        lastPurchaseDate: '',
+        purchaseNotes: '',
+        usageNotes: '',
+        typicalMonthlyUsage: 0,
       });
     }
     setErrors({});
@@ -89,8 +108,16 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
       name: formData.name.trim(),
       totalCost: formData.totalCost,
       totalWeight: formData.totalWeight,
-      weightUnit: formData.weightUnit,
+      weightUnit: formData.weightUnit as WeightUnit,
       costPerGram,
+      supplierName: formData.supplierName.trim() || undefined,
+      supplierContact: formData.supplierContact.trim() || undefined,
+      lastPurchaseDate: formData.lastPurchaseDate || undefined,
+      purchaseNotes: formData.purchaseNotes.trim() || undefined,
+      usageNotes: formData.usageNotes.trim() || undefined,
+      typicalMonthlyUsage: formData.typicalMonthlyUsage || undefined,
+      created_at: material?.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
     onSave(newMaterial);
@@ -101,6 +128,12 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
         totalCost: 0,
         totalWeight: 0,
         weightUnit: 'g',
+        supplierName: '',
+        supplierContact: '',
+        lastPurchaseDate: '',
+        purchaseNotes: '',
+        usageNotes: '',
+        typicalMonthlyUsage: 0,
       });
       setErrors({});
     }
@@ -114,6 +147,8 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
     const tooltips = {
       'g': 'Grams - Best for small quantities (oils, powders)',
       'kg': 'Kilograms - Good for larger purchases (1kg = 1000g)',
+      'ml': 'Milliliters - For liquid measurements (1ml ≈ 1g for water)',
+      'l': 'Liters - For large liquid quantities (1L = 1000ml)',
       'oz': 'Ounces - Common in US (1oz ≈ 28.35g)',
       'lb': 'Pounds - For bulk purchases (1lb ≈ 453.6g)'
     };
@@ -253,6 +288,8 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
                   <SelectContent>
                     <SelectItem value="g">g</SelectItem>
                     <SelectItem value="kg">kg</SelectItem>
+                    <SelectItem value="ml">ml</SelectItem>
+                    <SelectItem value="l">l</SelectItem>
                     <SelectItem value="oz">oz</SelectItem>
                     <SelectItem value="lb">lb</SelectItem>
                   </SelectContent>
@@ -267,6 +304,8 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
                     <div className="space-y-1">
                       <div><strong>g</strong> - {getWeightUnitTooltip('g')}</div>
                       <div><strong>kg</strong> - {getWeightUnitTooltip('kg')}</div>
+                      <div><strong>ml</strong> - {getWeightUnitTooltip('ml')}</div>
+                      <div><strong>l</strong> - {getWeightUnitTooltip('l')}</div>
                       <div><strong>oz</strong> - {getWeightUnitTooltip('oz')}</div>
                       <div><strong>lb</strong> - {getWeightUnitTooltip('lb')}</div>
                     </div>
@@ -288,6 +327,132 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
               <Info className="w-3 h-3" />
               Check the product label or receipt
             </div>
+          </motion.div>
+        </div>
+
+        {/* Supplier Information Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+            className="space-y-2"
+          >
+            <Label htmlFor="supplierName" className="text-base font-medium text-primary flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              Supplier Name
+            </Label>
+            <Input
+              id="supplierName"
+              value={formData.supplierName}
+              onChange={(e) => setFormData({ ...formData, supplierName: e.target.value })}
+              className="h-12 transition-all duration-300 border-pink-200 focus:border-pink-500 focus:ring-pink-500/20 hover:border-pink-300"
+              placeholder="e.g., Natural Supplies Co."
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 }}
+            className="space-y-2"
+          >
+            <Label htmlFor="supplierContact" className="text-base font-medium text-primary flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              Supplier Contact/Website
+            </Label>
+            <Input
+              id="supplierContact"
+              value={formData.supplierContact}
+              onChange={(e) => setFormData({ ...formData, supplierContact: e.target.value })}
+              className="h-12 transition-all duration-300 border-pink-200 focus:border-pink-500 focus:ring-pink-500/20 hover:border-pink-300"
+              placeholder="e.g., www.naturalsupplies.com or contact@supplier.com"
+            />
+          </motion.div>
+        </div>
+
+        {/* Purchase Information */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6 }}
+            className="space-y-2"
+          >
+            <Label htmlFor="lastPurchaseDate" className="text-base font-medium text-primary flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Last Purchase Date
+            </Label>
+            <Input
+              type="date"
+              id="lastPurchaseDate"
+              value={formData.lastPurchaseDate}
+              onChange={(e) => setFormData({ ...formData, lastPurchaseDate: e.target.value })}
+              className="h-12 transition-all duration-300 border-pink-200 focus:border-pink-500 focus:ring-pink-500/20 hover:border-pink-300"
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.7 }}
+            className="space-y-2"
+          >
+            <Label htmlFor="typicalMonthlyUsage" className="text-base font-medium text-primary flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Typical Monthly Usage ({formData.weightUnit})
+            </Label>
+            <Input
+              type="number"
+              id="typicalMonthlyUsage"
+              value={formData.typicalMonthlyUsage || ''}
+              onChange={(e) => setFormData({ ...formData, typicalMonthlyUsage: parseFloat(e.target.value) || 0 })}
+              className="h-12 transition-all duration-300 border-pink-200 focus:border-pink-500 focus:ring-pink-500/20 hover:border-pink-300"
+              placeholder="e.g., 500"
+              step="0.01"
+              min="0"
+            />
+          </motion.div>
+        </div>
+
+        {/* Notes Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.8 }}
+            className="space-y-2"
+          >
+            <Label htmlFor="purchaseNotes" className="text-base font-medium text-primary flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Purchase Notes
+            </Label>
+            <Textarea
+              id="purchaseNotes"
+              value={formData.purchaseNotes}
+              onChange={(e) => setFormData({ ...formData, purchaseNotes: e.target.value })}
+              className="min-h-[100px] transition-all duration-300 border-pink-200 focus:border-pink-500 focus:ring-pink-500/20 hover:border-pink-300"
+              placeholder="e.g., Bulk discount available for orders over 1kg"
+            />
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.9 }}
+            className="space-y-2"
+          >
+            <Label htmlFor="usageNotes" className="text-base font-medium text-primary flex items-center gap-2">
+              <FileText className="w-4 h-4" />
+              Usage & Storage Notes
+            </Label>
+            <Textarea
+              id="usageNotes"
+              value={formData.usageNotes}
+              onChange={(e) => setFormData({ ...formData, usageNotes: e.target.value })}
+              className="min-h-[100px] transition-all duration-300 border-pink-200 focus:border-pink-500 focus:ring-pink-500/20 hover:border-pink-300"
+              placeholder="e.g., Store in a cool, dark place. Best used within 12 months."
+            />
           </motion.div>
         </div>
 

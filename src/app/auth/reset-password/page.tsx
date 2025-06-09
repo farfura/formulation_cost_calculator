@@ -3,13 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { useAuth } from '@/contexts/AuthContext';
+// import { useAuth } from '@/contexts/AuthContext'; // Not directly used for password update
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { Calculator, ArrowRight } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('');
@@ -21,13 +21,14 @@ export default function ResetPasswordPage() {
   const { toast } = useToast();
 
   // Get the reset token from the URL
-  const resetToken = searchParams?.get('token');
+  // const resetToken = searchParams?.get('token'); // Token is handled by Supabase when user clicks link
 
   useEffect(() => {
-    if (!resetToken) {
-      router.push('/login');
-    }
-  }, [resetToken, router]);
+    // No need to manually check resetToken here if Supabase handles it on page load via onAuthStateChange or similar for password recovery flows
+    // However, if the token were part of the URL for a manual exchange, this would be the place.
+    // For Supabase's typical email link flow for password reset, the user is already in a temporary authenticated state
+    // allowing them to update their password.
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,8 +49,9 @@ export default function ResetPasswordPage() {
     }
 
     try {
-      // Call Supabase to update the password
-      const { data, error: updateError } = await supabase.auth.updateUser({
+      // Call Supabase to update the password. 
+      // The user should be in a state where this is allowed after clicking the reset link.
+      const { error: updateError } = await supabase.auth.updateUser({
         password: password
       });
 
@@ -57,7 +59,7 @@ export default function ResetPasswordPage() {
 
       toast({
         title: "✨ Password updated!",
-        description: "Your password has been successfully reset.",
+        description: "Your password has been successfully reset. Please log in.",
       });
 
       // Redirect to login

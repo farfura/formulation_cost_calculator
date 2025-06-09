@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Recipe, RawMaterial } from '@/types';
 import { scaleRecipe, getScalingOptions, getTotalRecipeWeight, formatScalingFactor } from '@/utils/scaling';
@@ -26,6 +26,20 @@ export default function RecipeScaling({ recipe, materials, onScaledRecipe, class
   const [isOpen, setIsOpen] = useState(false);
   const [customSize, setCustomSize] = useState<number>(100);
   const [selectedSize, setSelectedSize] = useState<number | null>(null);
+
+  // Add escape key handler
+  useEffect(() => {
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscapeKey);
+      return () => document.removeEventListener('keydown', handleEscapeKey);
+    }
+  }, [isOpen]);
 
   const currentSize = recipe.batchSize || getTotalRecipeWeight(recipe);
   const scalingOptions = getScalingOptions(recipe);
@@ -99,11 +113,11 @@ export default function RecipeScaling({ recipe, materials, onScaledRecipe, class
                   </div>
                   <motion.button
                     onClick={() => setIsOpen(false)}
-                    className="ml-auto p-2 rounded-full hover:bg-pink-100 transition-colors"
+                    className="ml-auto p-2 rounded-lg hover:bg-pink-100 transition-colors border border-pink-200 hover:border-pink-300"
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                   >
-                    <span className="text-xl text-pink-600">×</span>
+                    <span className="text-xl font-bold text-pink-600">✕</span>
                   </motion.button>
                 </CardTitle>
               </CardHeader>
