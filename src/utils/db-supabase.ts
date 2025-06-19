@@ -120,11 +120,20 @@ export async function getPackagingItemsFromSupabase(): Promise<PackagingItem[]> 
 
 // Save Raw Material using Supabase Client
 export async function saveRawMaterialToDB(material: RawMaterial): Promise<RawMaterial> {
+  console.log('saveRawMaterialToDB called with:', { name: material.name, id: material.id });
+  
   const userId = await getUserId();
-  if (!userId) throw new Error('Authentication required');
+  console.log('User ID from session:', userId);
+  
+  if (!userId) {
+    console.error('No user ID found - authentication required');
+    throw new Error('Authentication required');
+  }
 
   try {
     const supabase = await createSupabaseServerClient();
+    console.log('Supabase client created successfully');
+    
     const data = {
       id: material.id,
       name: material.name,
@@ -132,14 +141,16 @@ export async function saveRawMaterialToDB(material: RawMaterial): Promise<RawMat
       total_weight: material.totalWeight,
       weight_unit: material.weightUnit,
       cost_per_gram: material.costPerGram,
-      supplier_name: material.supplierName,
-      supplier_contact: material.supplierContact,
-      last_purchase_date: material.lastPurchaseDate,
-      purchase_notes: material.purchaseNotes,
-      usage_notes: material.usageNotes,
-      typical_monthly_usage: material.typicalMonthlyUsage,
+      supplier_name: material.supplierName || null,
+      supplier_contact: material.supplierContact || null,
+      last_purchase_date: material.lastPurchaseDate || null,
+      purchase_notes: material.purchaseNotes || null,
+      usage_notes: material.usageNotes || null,
+      typical_monthly_usage: material.typicalMonthlyUsage || null,
       user_id: userId,
     };
+
+    console.log('Data to be saved:', data);
 
     const { data: result, error } = await supabase
       .from('raw_materials')
@@ -147,7 +158,23 @@ export async function saveRawMaterialToDB(material: RawMaterial): Promise<RawMat
       .select()
       .single();
 
-    if (error) throw error;
+    console.log('Supabase response:', { result, error });
+
+    if (error) {
+      console.error('Supabase error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      throw error;
+    }
+
+    if (!result) {
+      throw new Error('No data returned from upsert operation');
+    }
+
+    console.log('Material saved successfully:', result);
 
     return {
       id: result.id,
@@ -166,7 +193,7 @@ export async function saveRawMaterialToDB(material: RawMaterial): Promise<RawMat
       updated_at: result.updated_at,
     };
   } catch (err) {
-    console.log('Error saving raw material:', err);
+    console.error('Error saving raw material:', err);
     throw err;
   }
 }

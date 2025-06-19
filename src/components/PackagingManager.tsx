@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Package, Plus, Edit, Trash2, Box, Tag, Droplet, Pipette, Archive, Layers } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 
 interface PackagingManagerProps {
   onSelect?: (packaging: PackagingItem) => void;
@@ -58,7 +59,7 @@ export default function PackagingManager({ onSelect, selectedItems = [], showSel
     if (!formData.name || !formData.cost) return;
 
     const newItem: PackagingItem = {
-      id: editingItem?.id || Date.now().toString(),
+      id: editingItem?.id || uuidv4(),
       name: formData.name,
       cost: parseFloat(formData.cost),
       description: formData.description,

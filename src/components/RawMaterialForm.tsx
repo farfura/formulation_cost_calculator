@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Plus, Edit2, DollarSign, Scale, AlertCircle, Sparkles, Info, Package, Calendar, TrendingUp, FileText } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { v4 as uuidv4 } from 'uuid';
 
 interface RawMaterialFormProps {
   material?: RawMaterial;
@@ -104,7 +105,7 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
     );
 
     const newMaterial: RawMaterial = {
-      id: material?.id || Date.now().toString(),
+      id: material?.id || uuidv4(),
       name: formData.name.trim(),
       totalCost: formData.totalCost,
       totalWeight: formData.totalWeight,

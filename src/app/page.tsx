@@ -17,7 +17,7 @@ import { useCurrency } from '@/contexts/CurrencyContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/utils/currency';
-
+import { useSupabase } from '@/contexts/SupabaseProvider';
 import RawMaterialForm from '@/components/RawMaterialForm';
 import RawMaterialList from '@/components/RawMaterialList';
 import RecipeForm from '@/components/RecipeForm';
@@ -29,7 +29,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calculator, Package, ChefHat, Sparkles, Heart, HelpCircle, Lightbulb, Plus, TrendingUp, Beaker, BarChart3, Layers, Zap, Tag, LogOut } from 'lucide-react';
-import { InventoryManager } from '@/components/InventoryManager';
+import InventoryManager from '@/components/InventoryManager';
 import { PricingCalculator } from '@/components/PricingCalculator';
 
 export default function Home() {
@@ -39,6 +39,8 @@ export default function Home() {
   const { toast } = useToast();
   const [materials, setMaterials] = useState<RawMaterial[]>([]);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [inventoryCount, setInventoryCount] = useState(0);
+  const [pricingCalculationsCount, setPricingCalculationsCount] = useState(0);
   const [editingMaterial, setEditingMaterial] = useState<RawMaterial | undefined>();
   const [editingRecipe, setEditingRecipe] = useState<Recipe | undefined>();
   const [showMaterialForm, setShowMaterialForm] = useState(false);
@@ -112,21 +114,36 @@ export default function Home() {
     setLoading(true);
     try {
       console.log('Attempting to save material:', material.name);
+      console.log('User authenticated:', !!user);
+      console.log('User ID:', user?.id);
+      
       const savedMaterial = await saveRawMaterialToDB(material);
       let updatedMaterials;
       
       if (editingMaterial) {
         updatedMaterials = materials.map(m => m.id === material.id ? savedMaterial : m);
         setEditingMaterial(undefined);
-        setShowSuccessMessage(`<span className="text-2xl">✨</span> "${material.name}" updated successfully!`);
+        setShowSuccessMessage(`✨ "${material.name}" updated successfully!`);
       } else {
         updatedMaterials = [...materials, savedMaterial];
-        setShowSuccessMessage(`<span className="text-2xl">🎉</span> "${material.name}" added to your collection!`);
+        setShowSuccessMessage(`🎉 "${material.name}" added to your collection!`);
       }
       setMaterials(updatedMaterials);
       setShowMaterialForm(false);
     } catch (err) {
       console.error('Error saving material:', err);
+      
+      // Enhanced error logging
+      if (err && typeof err === 'object') {
+        console.error('Error details:', {
+          message: (err as any).message,
+          code: (err as any).code,
+          details: (err as any).details,
+          hint: (err as any).hint,
+          stack: (err as any).stack
+        });
+      }
+      
       const errorMessage = err instanceof Error ? err.message : 'Failed to save material';
       toast({
         variant: "destructive",
@@ -146,7 +163,7 @@ export default function Home() {
       await deleteRawMaterialFromDB(id);
       const updatedMaterials = materials.filter(m => m.id !== id);
       setMaterials(updatedMaterials);
-      setShowSuccessMessage(`<span className="text-2xl">🗑️</span> "${materialName}" removed from your collection`);
+      setShowSuccessMessage(`🗑️ "${materialName}" removed from your collection`);
     } catch (err) {
       console.error('Error deleting material:', err);
       toast({
@@ -179,10 +196,10 @@ export default function Home() {
       if (editingRecipe) {
         updatedRecipes = recipes.map(r => r.id === recipe.id ? savedRecipe : r);
         setEditingRecipe(undefined);
-        setShowSuccessMessage(`<span className="text-2xl">✨</span> Recipe "${recipe.name}" updated successfully!`);
+        setShowSuccessMessage(`✨ Recipe "${recipe.name}" updated successfully!`);
       } else {
         updatedRecipes = [...recipes, savedRecipe];
-        setShowSuccessMessage(`<span className="text-2xl">🧪</span> Recipe "${recipe.name}" created successfully!`);
+        setShowSuccessMessage(`🧪 Recipe "${recipe.name}" created successfully!`);
       }
       setRecipes(updatedRecipes);
       setShowRecipeForm(false);
@@ -205,7 +222,7 @@ export default function Home() {
       await deleteRecipeFromDB(id);
       const updatedRecipes = recipes.filter(r => r.id !== id);
       setRecipes(updatedRecipes);
-      setShowSuccessMessage(`<span className="text-2xl">🗑️</span> Recipe "${recipeName}" deleted`);
+      setShowSuccessMessage(`🗑️ Recipe "${recipeName}" deleted`);
     } catch (err) {
       console.error('Error deleting recipe:', err);
       toast({
@@ -230,7 +247,7 @@ export default function Home() {
 
   const handleExportRecipe = (recipe: Recipe) => {
     exportToExcel(recipe);
-    setShowSuccessMessage(`<span className="text-2xl">📊</span> Recipe "${recipe.name}" exported successfully!`);
+    setShowSuccessMessage(`📊 Recipe "${recipe.name}" exported successfully!`);
   };
 
   // Calculate statistics
@@ -486,6 +503,16 @@ export default function Home() {
                   {item.id === 'recipes' && recipes.length > 0 && (
                     <Badge variant="secondary" className="ml-1 bg-purple-100 text-purple-700">
                       {recipes.length}
+                    </Badge>
+                  )}
+                  {item.id === 'inventory' && inventoryCount > 0 && (
+                    <Badge variant="secondary" className="ml-1 bg-green-100 text-green-700">
+                      {inventoryCount}
+                    </Badge>
+                  )}
+                  {item.id === 'pricing' && pricingCalculationsCount > 0 && (
+                    <Badge variant="secondary" className="ml-1 bg-blue-100 text-blue-700">
+                      {pricingCalculationsCount}
                     </Badge>
                   )}
                 </motion.button>
@@ -1046,7 +1073,7 @@ export default function Home() {
             >
               <motion.div variants={itemVariants}>
                 <div className="mt-4">
-                  <InventoryManager />
+                  <InventoryManager onInventoryCountChange={setInventoryCount} />
                 </div>
               </motion.div>
             </motion.div>
@@ -1055,7 +1082,7 @@ export default function Home() {
           {/* Pricing Section */}
           {activeSection === 'pricing' && (
             <div className="space-y-6">
-              <PricingCalculator hideHeader={false} />
+              <PricingCalculator hideHeader={false} onCalculationsCountChange={setPricingCalculationsCount} />
             </div>
           )}
         </AnimatePresence>

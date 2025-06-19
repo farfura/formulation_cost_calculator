@@ -45,7 +45,11 @@ interface InventoryItem {
   updated_at?: string;
 }
 
-export const InventoryManager: React.FC = () => {
+interface InventoryManagerProps {
+  onInventoryCountChange?: (count: number) => void;
+}
+
+export default function InventoryManager({ onInventoryCountChange }: InventoryManagerProps) {
   const [inventory, setInventory] = useState<InventoryItem[]>([]);
   const [newItem, setNewItem] = useState<Omit<InventoryItem, 'id' | 'created_at' | 'updated_at'>>({
     name: '',
@@ -68,6 +72,13 @@ export const InventoryManager: React.FC = () => {
     loadInventory();
   }, []);
 
+  useEffect(() => {
+    // Notify parent component of inventory count changes
+    if (onInventoryCountChange) {
+      onInventoryCountChange(inventory.length);
+    }
+  }, [inventory.length, onInventoryCountChange]);
+
   const loadInventory = async () => {
     try {
       setLoading(true);
@@ -88,8 +99,26 @@ export const InventoryManager: React.FC = () => {
         return;
       }
 
-      console.log('Inventory loaded:', data);
-      setInventory(data || []);
+      console.log('Raw inventory data from DB:', data);
+      
+      // Map snake_case database columns to camelCase interface
+      const mappedInventory: InventoryItem[] = (data || []).map(item => ({
+        id: item.id,
+        name: item.name,
+        totalWeight: item.total_weight,
+        weightUnit: item.weight_unit,
+        supplierName: item.supplier_name,
+        supplierContact: item.supplier_contact,
+        lastPurchaseDate: item.last_purchase_date,
+        purchaseNotes: item.purchase_notes,
+        usageNotes: item.usage_notes,
+        typicalMonthlyUsage: item.typical_monthly_usage,
+        created_at: item.created_at,
+        updated_at: item.updated_at
+      }));
+
+      console.log('Mapped inventory data:', mappedInventory);
+      setInventory(mappedInventory);
     } catch (error) {
       console.error('Error in loadInventory:', error);
       toast({
@@ -108,13 +137,26 @@ export const InventoryManager: React.FC = () => {
     try {
       console.log('Adding new item:', newItem);
 
+      // Map camelCase interface to snake_case database columns
+      const dataToInsert = {
+        name: newItem.name,
+        total_weight: newItem.totalWeight,
+        weight_unit: newItem.weightUnit,
+        supplier_name: newItem.supplierName || null,
+        supplier_contact: newItem.supplierContact || null,
+        last_purchase_date: newItem.lastPurchaseDate || null,
+        purchase_notes: newItem.purchaseNotes || null,
+        usage_notes: newItem.usageNotes || null,
+        typical_monthly_usage: newItem.typicalMonthlyUsage || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      console.log('Data to insert:', dataToInsert);
+
       const { data, error } = await supabase
         .from('inventory')
-        .insert([{
-          ...newItem,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        }])
+        .insert([dataToInsert])
         .select()
         .single();
 
@@ -129,7 +171,24 @@ export const InventoryManager: React.FC = () => {
       }
 
       console.log('Item added:', data);
-      setInventory([data, ...inventory]);
+      
+      // Map snake_case database result back to camelCase interface
+      const inventoryItem: InventoryItem = {
+        id: data.id,
+        name: data.name,
+        totalWeight: data.total_weight,
+        weightUnit: data.weight_unit,
+        supplierName: data.supplier_name,
+        supplierContact: data.supplier_contact,
+        lastPurchaseDate: data.last_purchase_date,
+        purchaseNotes: data.purchase_notes,
+        usageNotes: data.usage_notes,
+        typicalMonthlyUsage: data.typical_monthly_usage,
+        created_at: data.created_at,
+        updated_at: data.updated_at
+      };
+
+      setInventory([inventoryItem, ...inventory]);
       setNewItem({
         name: '',
         totalWeight: 0,
@@ -548,4 +607,4 @@ export const InventoryManager: React.FC = () => {
       )}
     </div>
   );
-}; 
+} 

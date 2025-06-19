@@ -35,9 +35,10 @@ export interface PriceBreakdown {
 interface PricingCalculatorProps {
   hideHeader?: boolean;
   onAddPrice?: (price: PriceBreakdown) => Promise<void>;
+  onCalculationsCountChange?: (count: number) => void;
 }
 
-export function PricingCalculator({ hideHeader = false, onAddPrice }: PricingCalculatorProps) {
+export function PricingCalculator({ hideHeader = false, onAddPrice, onCalculationsCountChange }: PricingCalculatorProps) {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string>('');
   const [actualCost, setActualCost] = useState<number>(0);
@@ -105,7 +106,11 @@ export function PricingCalculator({ hideHeader = false, onAddPrice }: PricingCal
     if (typeof window !== 'undefined' && !onAddPrice) {
       localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(calculationHistory));
     }
-  }, [calculationHistory, onAddPrice]);
+    // Notify parent component of calculations count changes
+    if (onCalculationsCountChange) {
+      onCalculationsCountChange(calculationHistory.length);
+    }
+  }, [calculationHistory, onAddPrice, onCalculationsCountChange]);
 
   const handleRecipeChange = (recipeId: string) => {
     setSelectedRecipeId(recipeId);

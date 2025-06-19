@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plus, Minus, ChefHat, Sparkles, Beaker, Target, Zap, Heart, Star, Calculator, Trash2 } from 'lucide-react';
+import { v4 as uuidv4 } from 'uuid';
 
 interface RecipeFormProps {
   recipe?: Recipe;
@@ -107,7 +108,7 @@ export default function RecipeForm({ recipe, materials, onSave, onCancel }: Reci
     }
 
     const newRecipe: Recipe = {
-      id: recipe?.id || Date.now().toString(),
+      id: recipe?.id || uuidv4(),
       name: recipeName,
       ingredients,
       totalCost,
