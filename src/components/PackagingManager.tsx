@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PackagingItem } from '@/types';
 import { getPackagingItems, savePackagingItems } from '@/utils/storage';
-import { formatCurrency } from '@/utils/currency';
+import { formatCurrency, convertCurrency, getCurrencySymbol } from '@/utils/currency';
 import { useCurrency } from '@/contexts/CurrencyContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,10 +58,13 @@ export default function PackagingManager({ onSelect, selectedItems = [], showSel
     e.preventDefault();
     if (!formData.name || !formData.cost) return;
 
+    // Convert user input cost from selected currency to USD for storage
+    const costInUSD = convertCurrency(parseFloat(formData.cost), currency, 'USD');
+
     const newItem: PackagingItem = {
       id: editingItem?.id || uuidv4(),
       name: formData.name,
-      cost: parseFloat(formData.cost),
+      cost: costInUSD,
       description: formData.description,
       supplier: formData.supplier,
       category: formData.category,
@@ -83,9 +86,11 @@ export default function PackagingManager({ onSelect, selectedItems = [], showSel
 
   const handleEdit = (item: PackagingItem) => {
     setEditingItem(item);
+    // Convert stored USD cost back to display currency for editing
+    const displayCost = convertCurrency(item.cost, 'USD', currency);
     setFormData({
       name: item.name,
-      cost: item.cost.toString(),
+      cost: displayCost.toString(),
       description: item.description || '',
       supplier: item.supplier || '',
       category: item.category
@@ -163,13 +168,13 @@ export default function PackagingManager({ onSelect, selectedItems = [], showSel
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-1">Cost *</label>
+                      <label className="block text-sm font-medium mb-1">Cost ({getCurrencySymbol(currency)}) *</label>
                       <Input
                         type="number"
                         step="0.01"
                         value={formData.cost}
                         onChange={(e) => setFormData({...formData, cost: e.target.value})}
-                        placeholder="0.00"
+                        placeholder={`e.g., ${currency === 'PKR' ? '150' : '0.50'}`}
                         required
                       />
                     </div>

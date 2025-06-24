@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { RawMaterial, WeightUnit } from '@/types';
 import { calculateCostPerGram } from '@/utils/conversions';
+import { convertCurrency, getCurrencySymbol } from '@/utils/currency';
+import { useCurrency } from '@/contexts/CurrencyContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,6 +22,7 @@ interface RawMaterialFormProps {
 }
 
 export default function RawMaterialForm({ material, onSave, onCancel }: RawMaterialFormProps) {
+  const { currency } = useCurrency();
   const [formData, setFormData] = useState({
     name: material?.name || '',
     totalCost: material?.totalCost || 0,
@@ -37,9 +40,11 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
 
   useEffect(() => {
     if (material) {
+      // Convert the stored USD cost to the display currency for editing
+      const displayCost = convertCurrency(material.totalCost, 'USD', currency);
       setFormData({
         name: material.name,
-        totalCost: material.totalCost,
+        totalCost: displayCost,
         totalWeight: material.totalWeight,
         weightUnit: material.weightUnit,
         supplierName: material.supplierName || '',
@@ -64,7 +69,7 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
       });
     }
     setErrors({});
-  }, [material]);
+  }, [material, currency]);
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -98,8 +103,11 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
       return;
     }
 
+    // Convert the user input cost from their selected currency to USD for storage
+    const totalCostInUSD = convertCurrency(formData.totalCost, currency, 'USD');
+
     const costPerGram = calculateCostPerGram(
-      formData.totalCost,
+      totalCostInUSD,
       formData.totalWeight,
       formData.weightUnit
     );
@@ -107,7 +115,7 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
     const newMaterial: RawMaterial = {
       id: material?.id || uuidv4(),
       name: formData.name.trim(),
-      totalCost: formData.totalCost,
+      totalCost: totalCostInUSD, // Store in USD
       totalWeight: formData.totalWeight,
       weightUnit: formData.weightUnit as WeightUnit,
       costPerGram,
@@ -140,7 +148,8 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
     }
   };
 
-  const costPerGram = formData.totalCost > 0 && formData.totalWeight > 0 
+  // Calculate cost per gram for display (using the input cost in selected currency)
+  const costPerGramDisplay = formData.totalCost > 0 && formData.totalWeight > 0 
     ? calculateCostPerGram(formData.totalCost, formData.totalWeight, formData.weightUnit)
     : 0;
 
@@ -216,7 +225,7 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
           >
             <Label htmlFor="totalCost" className="text-base font-medium text-primary flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
-              Total Cost You Paid 💰
+              Total Cost You Paid ({getCurrencySymbol(currency)}) 💰
             </Label>
             <Input
               type="number"
@@ -228,7 +237,7 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
                   ? 'border-red-300 focus:border-red-500 focus:ring-red-500/20' 
                   : 'border-yellow-200 focus:border-yellow-500 focus:ring-yellow-500/20 hover:border-yellow-300'
               }`}
-              placeholder="15.99"
+              placeholder={`e.g., ${currency === 'PKR' ? '4180' : currency === 'USD' ? '15.99' : '15.99'}`}
               step="0.01"
               min="0"
               required
@@ -457,7 +466,7 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
           </motion.div>
         </div>
 
-        {costPerGram > 0 && (
+        {costPerGramDisplay > 0 && (
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -481,14 +490,14 @@ export default function RawMaterialForm({ material, onSave, onCancel }: RawMater
                 whileHover={{ scale: 1.05 }}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
               >
-                <Badge variant="secondary" className="bg-gradient-to-r from-pink-100 to-yellow-100 text-pink-800 border-pink-200 text-xl font-bold py-2 px-4">
-                  ${costPerGram.toFixed(4)}/g ✨
-                </Badge>
-              </motion.div>
-            </div>
-            <div className="mt-3 text-sm text-pink-600">
-              💡 This means each gram of {formData.name || 'this ingredient'} costs ${costPerGram.toFixed(4)} in your recipes
-            </div>
+                                  <Badge variant="secondary" className="bg-gradient-to-r from-pink-100 to-yellow-100 text-pink-800 border-pink-200 text-xl font-bold py-2 px-4">
+                    {getCurrencySymbol(currency)}{costPerGramDisplay.toFixed(4)}/g ✨
+                  </Badge>
+                </motion.div>
+              </div>
+              <div className="mt-3 text-sm text-pink-600">
+                💡 This means each gram of {formData.name || 'this ingredient'} costs {getCurrencySymbol(currency)}{costPerGramDisplay.toFixed(4)} in your recipes
+              </div>
           </motion.div>
         )}
 

@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSupabase } from '@/contexts/SupabaseProvider';
 import { useToast } from '@/components/ui/use-toast';
 import { useCurrency } from '@/contexts/CurrencyContext';
-import { formatCurrency, getCurrencySymbol } from '@/utils/currency';
+import { formatCurrency, getCurrencySymbol, convertCurrency } from '@/utils/currency';
 import ExportButton from '@/components/ExportButton';
 
 const LOCAL_STORAGE_KEY = 'pricingCalculatorHistory';
@@ -116,7 +116,8 @@ export function PricingCalculator({ hideHeader = false, onAddPrice, onCalculatio
     setSelectedRecipeId(recipeId);
     const selectedRecipe = recipes.find(r => r.id === recipeId);
     if (selectedRecipe) {
-      setActualCost(selectedRecipe.total_cost);
+      // Convert recipe cost from USD to display currency
+      setActualCost(convertCurrency(selectedRecipe.total_cost, 'USD', currency));
     } else {
       setActualCost(0);
     }
@@ -161,14 +162,17 @@ export function PricingCalculator({ hideHeader = false, onAddPrice, onCalculatio
       const recipeInList = recipes.find(r => r.name === itemToEdit.recipeName);
       if (recipeInList) {
         setSelectedRecipeId(recipeInList.id);
-        setActualCost(recipeInList.total_cost);
+        // Convert recipe cost from USD to display currency
+        setActualCost(convertCurrency(recipeInList.total_cost, 'USD', currency));
       } else {
         setSelectedRecipeId('');
-        setActualCost(itemToEdit.actualCost);
+        // Convert stored USD value back to display currency for editing
+        setActualCost(convertCurrency(itemToEdit.actualCost, 'USD', currency));
       }
       
-      setPackagingCost(String(itemToEdit.packagingCost));
-      setContainerPrice(String(itemToEdit.containerPrice));
+      // Convert stored USD values back to display currency for editing
+      setPackagingCost(String(convertCurrency(itemToEdit.packagingCost, 'USD', currency)));
+      setContainerPrice(String(convertCurrency(itemToEdit.containerPrice, 'USD', currency)));
       setProfitMargin(String(itemToEdit.profitMargin));
       setEditingItemId(itemId);
       
@@ -210,15 +214,22 @@ export function PricingCalculator({ hideHeader = false, onAddPrice, onCalculatio
     const packaging = parseFloat(packagingCost) || 0;
     const container = parseFloat(containerPrice) || 0;
     const margin = parseFloat(profitMargin) || 0;
-    const totalCostValue = currentActualCost + packaging + container;
+    
+    // Convert user input costs from selected currency to USD for storage
+    const packagingInUSD = convertCurrency(packaging, currency, 'USD');
+    const containerInUSD = convertCurrency(container, currency, 'USD');
+    // actualCost is already in USD if it comes from a recipe, or needs conversion if manually entered
+    const actualCostInUSD = selectedRecipeId ? currentActualCost : convertCurrency(currentActualCost, currency, 'USD');
+    
+    const totalCostValue = actualCostInUSD + packagingInUSD + containerInUSD;
     const profitAmount = (totalCostValue * (margin / 100));
     const finalPrice = totalCostValue + profitAmount;
 
     const newCalculationData: Omit<PriceBreakdown, 'id'> = {
       recipeName,
-      actualCost: currentActualCost,
-      packagingCost: packaging,
-      containerPrice: container,
+      actualCost: actualCostInUSD,
+      packagingCost: packagingInUSD,
+      containerPrice: containerInUSD,
       profitMargin: margin,
       finalPrice: parseFloat(finalPrice.toFixed(2))
     };
